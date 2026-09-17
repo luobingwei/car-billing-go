@@ -1,0 +1,56 @@
+[
+    {
+        "name": "雷亚尔胜利屋协议价800",
+        "transfer": {
+            "normal_airport": 250,
+            "normal_station": 150,
+            "van_airport": 350,
+            "van_station": 250,
+            "sign_fee": 20,
+            "night_fee": 100
+        },
+        "package": {
+            "normal_4h": 300,
+            "normal_8h": 600,
+            "normal_over_h": 80,
+            "normal_over_km": 4,
+            "van_4h": 400,
+            "van_8h": 800,
+            "van_over_h": 100,
+            "van_over_km": 5
+        },
+        "point": {
+            "normal_rate": 4.5,
+            "normal_min": 100,
+            "van_rate": 6,
+            "van_min": 150
+        }
+    },
+    {
+        "name": "非协议价格1000",
+        "transfer": {
+            "normal_airport": 280,
+            "normal_station": 150,
+            "van_airport": 380,
+            "van_station": 250,
+            "sign_fee": 20,
+            "night_fee": 100
+        },
+        "package": {
+            "normal_4h": 350,
+            "normal_8h": 700,
+            "normal_over_h": 80,
+            "normal_over_km": 4,
+            "van_4h": 500,
+            "van_8h": 1000,
+            "van_over_h": 100,
+            "van_over_km": 5
+        },
+        "point": {
+            "normal_rate": 4.5,
+            "normal_min": 100,
+            "van_rate": 6.5,
+            "van_min": 150
+        }
+    }
+]

@@ -1,0 +1,22 @@
+# 用车账单生成器 - Docker Compose
+# VPS 上部署命令（在项目文件夹内执行）:
+#   docker compose up -d --build
+# 访问: http://服务器IP:3333  （后台 /admin，密码 123456）
+services:
+  car-billing:
+    # 本地构建（无需镜像仓库，推荐新手）
+    build: .
+    image: car-billing:latest
+
+    # 如果你已经会推镜像到仓库，可以改成:
+    # image: 你的账号/car-billing:latest   （并注释掉上面 build: . 一行）
+
+    container_name: car-billing
+    restart: unless-stopped
+    ports:
+      - "3333:8080"   # 左边宿主机端口(3333)可改；右边容器内端口固定(8080)
+    environment:
+      ADMIN_PASSWORD: "123456"                 # 后台管理密码，建议改成自己的
+      # SESSION_SECRET: "换成随机字符串"       # 可选：openssl rand -hex 32 生成
+    volumes:
+      - ./data:/app/data                       # 费率数据持久化，容器重建不丢
