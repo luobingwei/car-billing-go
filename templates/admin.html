@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>后台管理 - 用车账单系统</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,'PingFang SC',sans-serif}
+body{padding:14px;background:#f7fafb;font-size:14px}
+.wrap{max-width:1080px;margin:0 auto}
+.card{background:#fff;padding:16px;border-radius:14px;margin-bottom:12px}
+.form-item{margin:8px 0;}
+label{display:block;font-weight:500;margin-bottom:4px;color:#222;}
+input,select{width:100%;padding:9px;border:1px solid #ddd;border-radius:8px;font-size:14px;background:#fff}
+button{padding:9px 12px;border:none;border-radius:8px;margin:4px;font-size:14px;cursor:pointer}
+.btn-blue{background:#007AFF;color:#fff}
+.btn-red{background:#ff3b30;color:#fff}
+.btn-gray{background:#e5e7eb;color:#374151}
+.btn-green{background:#28c76f;color:#fff}
+.tip{color:#666;font-size:12px;margin:4px 0 8px}
+h4{margin:8px 0}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.topbar h2{font-size:18px}
+
+/* Tab 导航 */
+.tab-nav{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.tab-nav button{padding:10px 18px;border-radius:10px;border:none;background:#e9eef2;color:#444;font-size:15px;font-weight:600;cursor:pointer}
+.tab-nav button.active{background:#007AFF;color:#fff}
+.tab-panel{display:none}
+.tab-panel.show{display:block}
+
+/* 费率手风琴 */
+.accordion-item{border:1px solid #e2e2e2;border-radius:10px;margin:10px 0;overflow:hidden;}
+.accordion-head{padding:12px 14px;background:#f0f4f8;font-weight:600;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.accordion-head::after{content:"▼";font-size:12px;transition:transform 0.2s}
+.accordion-head.collapsed::after{transform:rotate(-90deg)}
+.accordion-body{padding:12px 14px;display:none}
+.accordion-body.open{display:block}
+
+/* 记账统计 */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.stat{flex:1;min-width:120px;background:#f9fafb;border-radius:12px;padding:12px 14px}
+.stat .num{font-size:24px;font-weight:700}
+.stat .lbl{font-size:12px;color:#6b7280}
+.stat.unpaid .num{color:#e11d48}
+.stat.paid .num{color:#16a34a}
+
+/* 筛选 */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:12px}
+.filters .f-item{display:flex;flex-direction:column;gap:4px}
+.filters label{font-size:12px;color:#6b7280;font-weight:600}
+.filters input,.filters select{min-width:120px}
+
+/* 表格 */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:860px}
+th,td{text-align:left;padding:10px;border-bottom:1px solid #f0f1f3;vertical-align:top}
+th{font-size:12px;color:#6b7280;font-weight:600;background:#fafbfc}
+td{font-size:13px}
+.bill-text{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.55;background:#f9fafb;border-radius:8px;padding:8px 10px;max-height:96px;overflow:hidden;margin:0}
+.bill-text.expanded{max-height:none}
+.expand-link{color:#007AFF;font-size:12px;cursor:pointer;margin-top:4px;display:inline-block}
+.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600}
+.badge.paid{background:#dcfce7;color:#16a34a}
+.badge.unpaid{background:#ffe4e6;color:#e11d48}
+
+/* 收钱开关 */
+.paid-switch{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.paid-switch input{display:none}
+.switch-track{width:42px;height:24px;border-radius:12px;background:#e5e7eb;position:relative;transition:background .2s;flex-shrink:0}
+.switch-track::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.25);transition:left .2s}
+.paid-switch input:checked + .switch-track{background:#34c759}
+.paid-switch input:checked + .switch-track::after{left:20px}
+.paid-label{font-size:13px;color:#374151}
+
+/* 手机卡片 */
+.mobile-list{display:none}
+.m-card{background:#f9fafb;border-radius:12px;padding:12px;margin-bottom:10px;border:1px solid #f0f1f3}
+.m-card .m-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.m-card .m-company{font-weight:700;font-size:15px}
+.m-card .m-meta{color:#6b7280;font-size:12px;margin-bottom:6px}
+.m-card .m-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center}
+.empty{text-align:center;color:#9ca3af;padding:30px 0}
+
+#toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:rgba(17,24,39,0.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:14px;z-index:99;opacity:0;pointer-events:none;transition:opacity .25s;max-width:86vw;text-align:center}
+#toast.show{opacity:1}
+
+@media (max-width:720px){
+  .table-wrap{display:none}
+  .mobile-list{display:block}
+  .filters .f-item{flex:1 1 45%}
+  .filters input,.filters select{min-width:0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="topbar">
+<h2>用车账单后台管理</h2>
+<span><a href="/logout" style="font-size:13px;color:#888">退出登录</a> ｜ <a href="/" style="font-size:13px;color:#888">返回前台</a></span>
+</div>
+
+<div class="tab-nav">
+  <button class="active" onclick="switchAdminTab('firms',this)">费率配置</button>
+  <button onclick="switchAdminTab('orders',this)">记账管理</button>
+</div>
+
+<!-- ============ Tab1 费率配置（原有功能） ============ -->
+<div class="tab-panel show" id="tab-firms">
+<div class="tip">接送机区分机场/高铁站价格；包车、点对点独立配置；单位全部为人民币元。点击板块标题展开/折叠</div>
+{{range $i, $f := .Firms}}
+<div class="card">
+<h4>{{$f.Name}}</h4>
+<form method="post">
+<input type="hidden" name="action" value="edit">
+<input type="hidden" name="idx" value="{{$i}}">
+<div class="form-item">
+    <label>合作公司名称</label>
+    <input name="name" value="{{$f.Name}}" placeholder="例如：XX车队">
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机配置</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>舒适专车‑机场单程价(元)</label><input name="tr_normal_airport" value="{{$f.Transfer.NormalAirport}}" placeholder="示例：250"></div>
+    <div class="form-item"><label>舒适专车‑高铁站单程价(元)</label><input name="tr_normal_station" value="{{$f.Transfer.NormalStation}}" placeholder="示例：150"></div>
+    <div class="form-item"><label>六座商务‑机场单程价(元)</label><input name="tr_van_airport" value="{{$f.Transfer.VanAirport}}" placeholder="示例：350"></div>
+    <div class="form-item"><label>六座商务‑高铁站单程价(元)</label><input name="tr_van_station" value="{{$f.Transfer.VanStation}}" placeholder="示例：250"></div>
+    <div class="form-item"><label>举牌接人服务费/次(元)</label><input name="tr_sign" value="{{$f.Transfer.SignFee}}" placeholder="示例：20"></div>
+    <div class="form-item"><label>深夜服务费(23:00‑05:00)/次(元)</label><input name="tr_night" value="{{$f.Transfer.NightFee}}" placeholder="示例：100"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜舒适专车</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_n4" value="{{$f.Package.Normal4H}}" placeholder="示例：300"></div>
+    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_n8" value="{{$f.Package.Normal8H}}" placeholder="示例：600"></div>
+    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_noh" value="{{$f.Package.NormalOverH}}" placeholder="示例：80"></div>
+    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_nokm" value="{{$f.Package.NormalOverKm}}" placeholder="示例：4"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜六座豪华商务车</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_v4" value="{{$f.Package.Van4H}}" placeholder="示例：400"></div>
+    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_v8" value="{{$f.Package.Van8H}}" placeholder="示例：800"></div>
+    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_voh" value="{{$f.Package.VanOverH}}" placeholder="示例：100"></div>
+    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_vokm" value="{{$f.Package.VanOverKm}}" placeholder="示例：5"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点（按里程计费）</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>舒适专车‑每公里单价(元/km)</label><input name="pt_nr" value="{{$f.Point.NormalRate}}" placeholder="示例：4.5"></div>
+    <div class="form-item"><label>舒适专车‑最低消费(元)</label><input name="pt_nmin" value="{{$f.Point.NormalMin}}" placeholder="示例：100"></div>
+    <div class="form-item"><label>六座商务‑每公里单价(元/km)</label><input name="pt_vr" value="{{$f.Point.VanRate}}" placeholder="示例：6"></div>
+    <div class="form-item"><label>六座商务‑最低消费(元)</label><input name="pt_vmin" value="{{$f.Point.VanMin}}" placeholder="示例：150"></div>
+  </div>
+</div>
+
+<button class="btn-blue">保存修改</button>
+</form>
+<form method="post">
+<input type="hidden" name="action" value="del">
+<input type="hidden" name="idx" value="{{$i}}">
+<button class="btn-red">删除该公司</button>
+</form>
+</div>
+{{end}}
+
+<div class="card">
+<h4>新增公司模板</h4>
+<form method="post">
+<input type="hidden" name="action" value="add">
+<div class="form-item">
+    <label>合作公司名称</label>
+    <input name="name" placeholder="例如：XX车队">
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机配置</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>舒适专车‑机场单程价(元)</label><input name="tr_normal_airport" placeholder="示例：250"></div>
+    <div class="form-item"><label>舒适专车‑高铁站单程价(元)</label><input name="tr_normal_station" placeholder="示例：150"></div>
+    <div class="form-item"><label>六座商务‑机场单程价(元)</label><input name="tr_van_airport" placeholder="示例：350"></div>
+    <div class="form-item"><label>六座商务‑高铁站单程价(元)</label><input name="tr_van_station" placeholder="示例：250"></div>
+    <div class="form-item"><label>举牌接人服务费/次(元)</label><input name="tr_sign" placeholder="示例：20"></div>
+    <div class="form-item"><label>深夜服务费/次(元)</label><input name="tr_night" placeholder="示例：100"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜舒适专车</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_n4" placeholder="示例：300"></div>
+    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_n8" placeholder="示例：600"></div>
+    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_noh" placeholder="示例：80"></div>
+    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_nokm" placeholder="示例：4"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜六座豪华商务车</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_v4" placeholder="示例：400"></div>
+    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_v8" placeholder="示例：800"></div>
+    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_voh" placeholder="示例：100"></div>
+    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_vokm" placeholder="示例：5"></div>
+  </div>
+</div>
+
+<div class="accordion-item">
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点（按里程计费）</div>
+  <div class="accordion-body">
+    <div class="form-item"><label>舒适专车‑每公里单价(元/km)</label><input name="pt_nr" placeholder="示例：4.5"></div>
+    <div class="form-item"><label>舒适专车‑最低消费(元)</label><input name="pt_nmin" placeholder="示例：100"></div>
+    <div class="form-item"><label>六座商务‑每公里单价(元/km)</label><input name="pt_vr" placeholder="示例：6"></div>
+    <div class="form-item"><label>六座商务‑最低消费(元)</label><input name="pt_vmin" placeholder="示例：150"></div>
+  </div>
+</div>
+
+<button class="btn-blue">新增保存</button>
+</form>
+</div>
+</div>
+
+<!-- ============ Tab2 记账管理（新增） ============ -->
+<div class="tab-panel" id="tab-orders">
+  <div class="stats">
+    <div class="stat"><div class="lbl">全部订单</div><div class="num" id="stTotal">0</div></div>
+    <div class="stat unpaid"><div class="lbl">未收钱</div><div class="num" id="stUnpaid">0</div></div>
+    <div class="stat paid"><div class="lbl">已收钱</div><div class="num" id="stPaid">0</div></div>
+  </div>
+
+  <div class="card">
+    <div class="filters">
+      <div class="f-item"><label>公司</label><select id="fCompany"></select></div>
+      <div class="f-item"><label>收款状态</label>
+        <select id="fPaid"><option value="">全部</option><option value="0">未收钱</option><option value="1">已收钱</option></select>
+      </div>
+      <div class="f-item"><label>日期从</label><input type="date" id="fFrom"></div>
+      <div class="f-item"><label>日期到</label><input type="date" id="fTo"></div>
+      <div class="f-item"><label>&nbsp;</label><button class="btn-blue" onclick="loadOrders()">查询</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+      <button class="btn-green" onclick="exportOrders('xlsx')">导出 Excel(.xlsx)</button>
+      <button class="btn-blue" onclick="exportOrders('csv')">导出 CSV</button>
+      <button class="btn-gray" onclick="loadOrders()">刷新列表</button>
+      <span style="font-size:12px;color:#6b7280;">导出内容 = 当前筛选结果，WPS / Excel 可直接打开</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th style="width:50px;">ID</th>
+          <th style="width:140px;">公司</th>
+          <th style="width:95px;">日期</th>
+          <th style="width:90px;">总金额(元)</th>
+          <th style="width:90px;">实收(元)</th>
+          <th style="width:95px;">对接人</th>
+          <th>账单内容</th>
+          <th style="width:110px;">是否已收钱</th>
+          <th style="width:100px;">操作</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="mobile-list" id="mobileList"></div>
+    <div class="empty" id="emptyBox" style="display:none;">暂无订单，去前台生成并保存吧</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+function toggleAcc(el){
+    const body = el.nextElementSibling;
+    el.classList.toggle('collapsed');
+    body.classList.toggle('open');
+}
+function switchAdminTab(name, btn){
+    document.querySelectorAll('.tab-nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-firms').classList.toggle('show', name === 'firms');
+    document.getElementById('tab-orders').classList.toggle('show', name === 'orders');
+    if (name === 'orders') loadOrders();
+}
+
+/* ===== 记账管理 ===== */
+let ORDERS = [];
+let toastTimer = null;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+function copyText(text){
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly','');
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+  document.body.appendChild(ta);
+  ta.focus(); ta.select(); ta.setSelectionRange(0, 99999);
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch(e){ ok = false; }
+  document.body.removeChild(ta);
+  if (ok) return true;
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    try { navigator.clipboard.writeText(text); return true; } catch(e){ return false; }
+  }
+  return false;
+}
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function queryString(){
+  const p = new URLSearchParams();
+  const c = document.getElementById('fCompany').value, paid = document.getElementById('fPaid').value,
+        f = document.getElementById('fFrom').value, t = document.getElementById('fTo').value;
+  if (c) p.set('company', c);
+  if (paid !== '') p.set('paid', paid);
+  if (f) p.set('date_from', f);
+  if (t) p.set('date_to', t);
+  return p.toString();
+}
+async function loadOrders(){
+  try {
+    const res = await fetch('/api/order/list?' + queryString());
+    const data = await res.json();
+    if (!data.ok){ toast('加载失败：' + (data.error||'')); return; }
+    ORDERS = data.orders || [];
+    document.getElementById('stTotal').textContent = data.total || 0;
+    document.getElementById('stUnpaid').textContent = data.unpaid || 0;
+    document.getElementById('stPaid').textContent = data.paid || 0;
+    const sel = document.getElementById('fCompany');
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">全部公司</option>' + (data.companies||[]).map(c => '<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+    sel.value = cur;
+    renderTable(); renderMobile();
+  } catch(e){
+    toast('连接后端失败，请确认已部署');
+  }
+}
+function renderTable(){
+  const tb = document.getElementById('tbody');
+  if (!ORDERS.length){ tb.innerHTML=''; document.getElementById('emptyBox').style.display='block'; return; }
+  document.getElementById('emptyBox').style.display='none';
+  tb.innerHTML = ORDERS.map(o => {
+    const paid = Number(o.paid) === 1;
+    return `<tr>
+      <td>${o.id}</td>
+      <td><strong>${esc(o.company)}</strong></td>
+      <td>${esc(o.date)}</td>
+      <td><strong>${esc(o.amount || '')}</strong></td>
+      <td><strong>${esc(o.received || '')}</strong></td>
+      <td>@${esc(o.contact)}</td>
+      <td>
+        <pre class="bill-text" id="bt_${o.id}">${esc(o.content)}</pre>
+        <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
+        <button class="btn-gray" style="padding:4px 10px;font-size:12px;" onclick="copyOrder(${o.id})">复制账单</button>
+      </td>
+      <td>
+        <label class="paid-switch">
+          <input type="checkbox" ${paid?'checked':''} onchange="togglePaid(${o.id}, this.checked)">
+          <span class="switch-track"></span>
+          <span class="paid-label">${paid?'已收钱':'未收钱'}</span>
+        </label>
+      </td>
+      <td><button class="btn-red" style="padding:4px 10px;font-size:12px;" onclick="deleteOrder(${o.id})">删除</button></td>
+    </tr>`;
+  }).join('');
+}
+function renderMobile(){
+  const box = document.getElementById('mobileList');
+  if (!ORDERS.length){ box.innerHTML=''; return; }
+  box.innerHTML = ORDERS.map(o => {
+    const paid = Number(o.paid) === 1;
+    return `<div class="m-card">
+      <div class="m-head">
+        <span class="m-company">${esc(o.company)}</span>
+        <span class="badge ${paid?'paid':'unpaid'}">${paid?'已收钱':'未收钱'}</span>
+      </div>
+      <div class="m-meta">日期：${esc(o.date)} ｜ 总金额：<strong>${esc(o.amount || '-')}元</strong> ｜ 实收：<strong>${esc(o.received || '-')}元</strong> ｜ 对接人：@${esc(o.contact)} ｜ 单号：#${o.id}</div>
+      <pre class="bill-text" id="mb_${o.id}">${esc(o.content)}</pre>
+      <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
+      <div class="m-actions">
+        <button class="btn-gray" style="padding:6px 10px;font-size:12px;" onclick="copyOrder(${o.id})">复制账单</button>
+        <label class="paid-switch">
+          <input type="checkbox" ${paid?'checked':''} onchange="togglePaid(${o.id}, this.checked)">
+          <span class="switch-track"></span>
+          <span class="paid-label">${paid?'已收':'未收'}</span>
+        </label>
+        <button class="btn-red" style="padding:6px 10px;font-size:12px;" onclick="deleteOrder(${o.id})">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleExpand(id, link){
+  const el = document.getElementById('bt_'+id) || document.getElementById('mb_'+id);
+  if (el) el.classList.toggle('expanded');
+}
+function copyOrder(id){
+  const o = ORDERS.find(x => Number(x.id) === Number(id));
+  if (!o) return;
+  if (copyText(o.content)) toast('✅ 已复制到剪贴板');
+  else toast('复制失败，请长按文本手动复制');
+}
+/* 是否收钱切换：二次确认 */
+function togglePaid(id, checked){
+  const next = checked ? '已收钱' : '未收钱';
+  if (!confirm('确认将该账单标记为「' + next + '」？')){
+    loadOrders(); return;
+  }
+  fetch('/api/order/toggle', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: id })
+  }).then(r => r.json()).then(d => {
+    if (d.ok) toast('✅ 已更新为「' + (d.paid===1?'已收钱':'未收钱') + '」');
+    else toast('更新失败');
+    loadOrders();
+  }).catch(() => { toast('更新失败'); loadOrders(); });
+}
+function deleteOrder(id){
+  if (!confirm('确认删除该账单？删除后不可恢复。')) return;
+  fetch('/api/order/delete', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ id: id })
+  }).then(r => r.json()).then(d => {
+    if (d.ok) toast('已删除');
+    loadOrders();
+  }).catch(() => toast('删除失败'));
+}
+function exportOrders(format){
+  window.location.href = '/api/order/export?format=' + format + (queryString() ? '&' + queryString() : '');
+}
+</script>
+</body>
+</html>
