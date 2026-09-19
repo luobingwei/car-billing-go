@@ -10,12 +10,15 @@
 - ✅ 「**保存到记账本**」：核对无误后一键写入数据库
 - ✅ 总金额自动从结果文本解析（两台车合并账单也能取对），另有**实收金额**字段
 - ✅ 后台「**记账管理**」：数据库记账（公司 / 日期 / 总金额 / 实收 / 对接人 / 账单内容 / 是否收钱）
+- ✅ 已收钱订单自动加删除线，一眼看出哪些结了
 - ✅ 收钱状态切换带二次确认
 - ✅ 按筛选结果导出 **Excel(.xlsx) / CSV**，WPS / Excel 可直接打开
 - ✅ 后台手机 / 电脑自适应
 - ✅ 后台管理多家合作公司的费率（增删改）
+- ✅ 输出符号与 Markdown 笔记兼容（`·` 列表、`————` 分隔线）
 - ✅ 单文件 Go 程序 + Docker + SQLite，部署超简单
-- ✅ **费率、订单、历史全部存 SQLite**：备份一个 `.db` 文件 = 整套系统备份（费率 `firms.json` 只在首次启动时自动导入数据库，之后以数据库为准）
+- ✅ **费率、订单、历史全部存 SQLite**：备份一个 `.db` 文件 = 整套系统备份
+- ✅ 页面底部显示版本号，更新后一眼确认
 
 ---
 
@@ -23,41 +26,34 @@
 
 ```
 car-billing-go/
-├── main.go              # Go 主程序（核心代码）
-├── go.mod / go.sum      # Go 模块配置与依赖锁
+├── main.go              # Go 主程序
+├── go.mod / go.sum      # Go 依赖
 ├── Dockerfile           # 镜像构建文件
-├── docker-compose.yml   # 标准部署配置（命令行用）
-├── deploy.sh            # 命令行一键部署脚本
-├── .gitignore           # git 忽略规则
-├── .github/             # （可选）GitHub Actions 自动构建镜像
-├── templates/           # 页面模板（可自行改样式）
-│   ├── index.html       # 账单生成首页（复制+保存记账）
+├── docker-compose.yml   # 部署配置
+├── templates/           # 页面模板
+│   ├── index.html       # 账单生成首页
 │   ├── login.html       # 后台登录页
 │   └── admin.html       # 费率配置 + 记账管理 后台
 └── data/
-    ├── firms.json       # 费率数据（首次启动自动导入数据库，之后以数据库为准，可留着不动）
-    └── orders.db        # 数据库：订单 + 历史 + 费率（备份这一个文件即可！）
+    └── orders.db        # 数据库：订单 + 历史 + 费率（备份这一个文件即可）
 ```
+
+> 全新安装不带任何示例公司，启动后在后台「费率配置」里自己添加合作公司和价格即可。
 
 ---
 
-## 📖 部署教程（Arcane 面板版，推荐）
+## 📖 部署教程（1Panel）
 
-> 你只需要：**① 把代码放到 GitHub → ② Arcane 面板里填一份 compose → ③ 完成**
-> 全程不用 SSH、不用装 Git、不用镜像仓库。
+> 前提：代码已推到你的 GitHub 仓库（如 `https://github.com/你的用户名/car-billing-go.git`）。
 
-### 第一步：把项目放到 GitHub
+### 第一步：1Panel 创建编排
 
-1. 打开 GitHub，点右上角 **+** → **New repository**
-2. Repository name 填：`car-billing-go`，可见性选 **Public** 或 **Private**，其他不勾，点 **Create repository**
-3. 在仓库页面点 **Add file → Upload files**
-4. 打开本机的 `car-billing-go` 文件夹，全选（Ctrl+A），把**所有文件和文件夹**一起拖进上传框，点 **Commit changes**
-   > `templates`、`data` 是文件夹，要一起拖进去。
-
-### 第二步：Arcane 面板部署
-
-1. 打开你的 Arcane 面板 → **Projects / 项目** → **新建项目 / New Project**
-2. 创建方式选「**Compose 内容 / 粘贴 YAML**」，把下面这份完整粘贴进去：
+1. 登录 1Panel 面板 → 左侧菜单 **容器** → **编排**
+2. 点 **创建编排**
+3. 填写：
+   - **名称**：`car-billing`
+   - **来源**：选「**本地编排**」（直接粘贴 YAML）
+   - **内容**：把下面这份完整粘贴进去 👇
 
 ```yaml
 services:
@@ -68,7 +64,7 @@ services:
     ports:
       - "3333:8080"
     environment:
-      ADMIN_PASSWORD: "123456"
+      ADMIN_PASSWORD: "改成你自己的密码"
     volumes:
       - car-billing-data:/app/data
 volumes:
@@ -76,138 +72,73 @@ volumes:
 ```
 
 > 🔑 把 `你的用户名` 换成你的 GitHub 用户名。
-> `build: https://github.com/...git` 是 Docker 的 Git 构建语法，部署时自动从 GitHub 拉代码构建，**以后你更新代码推上 GitHub，面板里点重建就能更新**，数据卷 `car-billing-data` 保留，数据不丢。
+> `build: https://github.com/...git` 是 Docker 的 Git 构建语法，部署时自动从 GitHub 拉代码编译。以后你更新代码推上 GitHub，在 1Panel 里点「重建」就能更新，数据卷保留、订单不丢。
 
-3. 点 **部署 / Deploy / Up**，等构建完成（首次要下载依赖，2-5 分钟）
-4. 云服务器安全组放行 **3333** 端口
+4. 点 **确认**，等镜像构建完成（首次要下载依赖，2-5 分钟）
+5. 云服务器安全组放行 **3333** 端口
 
-### 第三步：访问使用
+### 第二步：访问使用
 
 | 页面 | 地址 | 说明 |
 |------|------|------|
 | 首页 | `http://你的VPS的IP:3333` | 生成账单（一键复制 / 保存到记账本） |
-| 后台 | `http://你的VPS的IP:3333/admin` | 费率配置 + 记账管理，**初始密码：123456** |
+| 后台 | `http://你的VPS的IP:3333/admin` | 费率配置 + 记账管理 |
 
-> ⚠️ 第一次用建议立刻改密码：部署后编辑项目 compose 里的 `ADMIN_PASSWORD`，保存重新部署。
+> 后台密码就是 compose 里 `ADMIN_PASSWORD` 设置的值。
 
----
+### 第三步：首次配置
 
-## 📖 部署教程（命令行版，备用）
+打开 `/admin` 登录后：
 
-```bash
-# 1. 连上 VPS（宝塔终端 / SSH）
-# 2. 下载代码
-cd /root
-git clone https://github.com/你的用户名/car-billing-go.git
-cd car-billing-go
-# 3. 启动
-docker compose up -d --build
-# 4. 放行 3333 端口即可访问
-```
+1. 进「**费率配置**」→ 添加你的合作公司（接送机 / 包车 / 点对点 三种价格）
+2. 回到首页选公司 → 正常生成账单
 
 ---
 
-## 🔄 版本发布流程（以后升级用）
+## 🔄 日常更新（以后改代码后）
 
-> 当前版本是 **v2.0.1**。以后每次升级：**改代码 → 推 GitHub → Arcane 点重建**。
-> 想保留旧版本测试再切换时，用「新建项目 + 新端口 + 新数据卷」的方式并行跑。
+1. 新代码推到 GitHub
+2. 1Panel → 容器 → 编排 → 找到 `car-billing` → 点 **重建**（或「重新构建」）
+3. 等重建完成，打开页面看**底部版本号**，确认是最新版本
 
-### 日常小更新（不保留旧版）
-
-1. 改代码 → push 到 GitHub
-2. Arcane 面板 → 对应项目 → 点「重新构建 / 重建」
-3. 自动拉最新代码重建容器，数据卷保留、订单不丢
-
-### 想先测试再切换（新旧共存）
-
-1. **Arcane 新建一个项目**，compose 粘贴下面这份（注意：端口 3334、容器名、数据卷都不同，和线上 3333 完全隔离）：
-
-```yaml
-services:
-  car-billing-new:
-    build: https://github.com/你的用户名/car-billing-go.git
-    container_name: car-billing-new
-    restart: unless-stopped
-    ports:
-      - "3334:8080"
-    environment:
-      ADMIN_PASSWORD: "123456"
-    volumes:
-      - car-billing-new-data:/app/data
-volumes:
-  car-billing-new-data:
-```
-
-2. 部署后访问 `http://IP:3334` 测试新版本（线上 3333 不受影响）
-3. 测试通过：停掉旧项目容器 → 把新项目 compose 改回端口 3333、容器名 `car-billing`、数据卷 `car-billing-data` → 重新部署
-4. 回滚：有问题就把旧容器启动回来即可
-
-### 打版本标签（建议）
-
-GitHub 网页 → 仓库右侧 **Releases → Create a new release** → Tag 填 `v2.0.1` → Publish。
-以后升级打 v1.1.0、v2.0.0…… 每个版本在 GitHub 上永久留档。
+> 想测试新版再上线？新建一个编排，端口用 **3334**、容器名 `car-billing-test`、数据卷 `car-billing-test-data`，测好再切回正式编排。
 
 ---
 
-## 🛠 常用命令（命令行部署时用）
+## 💾 备份与恢复
 
-```bash
-# 看运行日志（排查问题用）
-docker logs -f car-billing
+后台 `/admin` 顶部「数据备份」区：
 
-# 停止服务
-docker compose down
+- **⬇ 下载数据库备份**：下载一个带日期的 `.db` 文件（如 `orders_2026-09-19_201500.db`），**含全部订单、历史记录、费率**，保存到电脑即可
+- **⬆ 恢复备份（上传 .db）**：换新服务器或误删后，上传备份文件一键还原
 
-# 重启服务
-docker compose restart
-
-# 备份费率数据（重要！）
-cp data/firms.json ~/firms-备份-$(date +%F).json
-
-# 备份记账数据（重要！）
-cp data/orders.db ~/orders-备份-$(date +%F).db
-```
+建议每周下载一次备份存到电脑。
 
 ---
 
 ## ❓ 常见问题
 
 **Q：打不开网页？**
-检查两步：① 云服务器安全组是否放行 3333 端口；② VPS 防火墙是否放行 3333 端口。
+检查两步：① 云服务商控制台安全组放行 3333；② VPS 系统防火墙放行 3333。
 
-**Q：想换访问端口？**
-改 compose 里 `"3333:8080"` 左边的数字，比如 `"9000:8080"`，然后重新部署。
+**Q：想换端口？**
+改 compose 里 `"3333:8080"` 左边的数字（比如 `"9000:8080"`），重建即可。
 
 **Q：数据会丢吗？**
-不会。`car-billing-data` 是命名数据卷，容器删了重建数据还在。**建议定期点后台「⬇ 下载数据库备份」**，一个 `.db` 文件就含全部订单、历史记录和费率，保存到电脑即可。换服务器时在新环境部署后，用「⬆ 恢复备份」上传即可。
+不会。`car-billing-data` 是命名数据卷，容器删了重建数据还在。但**仍建议定期下载备份**。
+
+**Q：怎么确认跑的是哪个版本？**
+看页面最底部小字，会显示 `用车账单系统 vX.X.X`。
 
 **Q：想在手机上用？**
-部署好后手机浏览器直接打开 `http://IP:3333`（页面手机自适应），可添加到主屏幕当 App 用。
-
-**Q：更新后提示数据表错误？**
-不会发生。v2.0.0 起程序启动时会自动检测并补齐缺失的列，旧数据自动迁移。
+手机浏览器打开 `http://IP:3333`（页面自适应），可「添加到主屏幕」当 App 用。
 
 ---
 
-## ⚙️ 环境变量说明
+## ⚙️ 环境变量
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `PORT` | `8080` | 程序监听端口（容器内，一般不用改） |
-| `ADMIN_PASSWORD` | `123456` | 后台密码 |
-| `SESSION_SECRET` | 随机 | 会话密钥；不设置则重启需重新登录 |
-| `FIRMS_DATA` | `data/firms.json` | 费率数据文件位置 |
-| `ORDERS_DB` | `data/orders.db` | 记账数据库位置（SQLite） |
-| `TEMPLATES_DIR` | `templates` | 页面模板目录 |
-
----
-
-## 💡 想改页面样式？
-
-模板是独立 HTML 文件，直接改 `templates/` 下的文件，改完推 GitHub → Arcane 重建即可。
-
----
-
-## ☁️ （可选）GitHub Actions 自动构建镜像
-
-项目里附带 `.github/workflows/build.yml`（自动构建 Docker 镜像推送到 Docker Hub），**用 Arcane 的 Git 构建方式部署时不需要它**。如果以后想用「拉取镜像」方式部署（VPS 上完全没有代码），再按该文件头部的说明配置 Docker Hub 即可。
+| `ADMIN_PASSWORD` | （必填） | 后台登录密码 |
+| `SESSION_SECRET` | 随机 | 会话密钥；设置后重启不用重新登录 |
+| `PORT` | `8080` | 容器内端口（一般不用改） |
