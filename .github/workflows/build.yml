@@ -1,0 +1,67 @@
+# ============================================================
+# 用车账单系统 - Docker 镜像自动构建
+#
+# 触发规则：
+#   1. 推送到 main 分支      -> 构建并推送 latest 镜像
+#   2. 打版本标签 v* (如 v2.0.0) -> 构建并推送 latest + v2.0.0 两个镜像
+#
+# 这样旧版本镜像（如 v1.0.0）永远保留，不会被覆盖；
+# 1Panel 里可以同时拉取 v1.0.0 和 v2.0.0 两个镜像、两个容器并行跑，
+# 调试通过后再切换正式端口。
+#
+# 使用前需要（一次性配置）：
+#   1. 注册 Docker Hub 账号：https://hub.docker.com
+#   2. 生成访问令牌：账号头像 -> Account Settings -> Security -> New Access Token
+#      （权限选 Read,Write,Delete）
+#   3. 在本仓库 Settings -> Secrets and variables -> Actions 里添加两个密钥：
+#        DOCKER_USERNAME = 你的 Docker Hub 用户名
+#        DOCKER_TOKEN    = 刚生成的访问令牌
+# ============================================================
+name: Build Docker Image
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 登录 Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: 构建并推送镜像
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # latest + 版本标签（push 代码时是 main，打标签时是 v2.0.0 这类）
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/car-billing:latest
+            ${{ secrets.DOCKER_USERNAME }}/car-billing:${{ github.ref_name }}
+
+      # 想改用 GitHub 自带仓库（GHCR）的话，注释掉上面两个 step，
+      # 取消下面这段的注释，并把「你的用户名」改成 GitHub 用户名：
+      #
+      # - name: 登录 GHCR
+      #   uses: docker/login-action@v3
+      #   with:
+      #     registry: ghcr.io
+      #     username: ${{ github.actor }}
+      #     password: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # - name: 构建并推送镜像（GHCR）
+      #   uses: docker/build-push-action@v5
+      #   with:
+      #     context: .
+      #     push: true
+      #     tags: |
+      #       ghcr.io/你的用户名/car-billing:latest
+      #       ghcr.io/你的用户名/car-billing:${{ github.ref_name }}

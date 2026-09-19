@@ -1,0 +1,13 @@
+# 编译产物
+car-billing
+car-billing.exe
+
+# 日志
+*.log
+
+# 数据临时文件（正式的费率数据 data/firms.json 要提交到仓库）
+data/*.tmp
+
+# 系统文件
+.DS_Store
+Thumbs.db

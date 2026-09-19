@@ -1,0 +1,8 @@
+.git
+.gitignore
+*.log
+car-billing
+car-billing.exe
+*.md
+docker-compose.yml
+deploy.sh

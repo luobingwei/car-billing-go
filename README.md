@@ -1,4 +1,4 @@
-# 🚗 用车账单生成器（Go + SQLite + Docker） v2.0.0
+# 🚗 用车账单生成器（Go + SQLite + Docker） v2.0.1
 
 一个帮你在微信里快速生成「用车账单 / 对外报价」的小工具：
 
@@ -109,7 +109,7 @@ docker compose up -d --build
 
 ## 🔄 版本发布流程（以后升级用）
 
-> 当前版本是 **v2.0.0**。以后每次升级：**改代码 → 推 GitHub → Arcane 点重建**。
+> 当前版本是 **v2.0.1**。以后每次升级：**改代码 → 推 GitHub → Arcane 点重建**。
 > 想保留旧版本测试再切换时，用「新建项目 + 新端口 + 新数据卷」的方式并行跑。
 
 ### 日常小更新（不保留旧版）
@@ -144,7 +144,7 @@ volumes:
 
 ### 打版本标签（建议）
 
-GitHub 网页 → 仓库右侧 **Releases → Create a new release** → Tag 填 `v2.0.0` → Publish。
+GitHub 网页 → 仓库右侧 **Releases → Create a new release** → Tag 填 `v2.0.1` → Publish。
 以后升级打 v1.1.0、v2.0.0…… 每个版本在 GitHub 上永久留档。
 
 ---

@@ -452,7 +452,10 @@ function generate(){
   }
   let lastTotal = 0;
   let lines=[];
-  if(contact) lines.push(`@${contact}`);
+  if(contact){
+    const cleanContact = String(contact).replace(/^@+/, ''); // 去掉用户手动输入的开头@，统一只输出一个@
+    lines.push(`@${cleanContact}`);
+  }
   lines.push(`客户：${customer}`);
 
   if(currentType === 'transfer'){
@@ -473,13 +476,13 @@ function generate(){
     lines.push(`车型：${carName}`);
     lines.push(`路线：${route}`);
     lines.push(`费用明细：`);
-    lines.push(`  - 基础车费：${base}元`);
-    if(signFee>0) lines.push(`  - 举牌服务：${signFee}元`);
-    if(nightFee>0) lines.push(`  - 深夜服务费：${nightFee}元`);
+    lines.push(`  · 基础车费：${base}元`);
+    if(signFee>0) lines.push(`  · 举牌服务：${signFee}元`);
+    if(nightFee>0) lines.push(`  · 深夜服务费：${nightFee}元`);
     let total = base + signFee + nightFee + park;
     lastTotal = total;
-    lines.push(`  - 路桥停车：${park}元`);
-    lines.push(`----------------`);
+    lines.push(`  · 路桥停车：${park}元`);
+    lines.push(`——————————————`);
     lines.push(`总计：${total}元`);
   }
   else if(currentType === 'package'){
@@ -509,11 +512,11 @@ function generate(){
     lines.push(`行驶里程：${km} 公里`);
     lines.push(`行程路线：${route}`);
     lines.push(`费用计算：`);
-    lines.push(`- 套餐基础费：${basePrice}元`);
-    lines.push(`- 超时费：${overHour.toFixed(1)} 小时 × ${hourPrice}元 = ${overHourPrice}元`);
-    lines.push(`- 超里程费：${overKm} 公里 × ${kmPrice}元 = ${overKmPrice}元`);
-    lines.push(`- 路桥停车费（实报实销）：${park}元`);
-    lines.push(`--------------------------------`);
+    lines.push(`· 套餐基础费：${basePrice}元`);
+    lines.push(`· 超时费：${overHour.toFixed(1)} 小时 × ${hourPrice}元 = ${overHourPrice}元`);
+    lines.push(`· 超里程费：${overKm} 公里 × ${kmPrice}元 = ${overKmPrice}元`);
+    lines.push(`· 路桥停车费（实报实销）：${park}元`);
+    lines.push(`——————————————`);
     lines.push(`费用合计：${sum}元`);
   }
   else {
@@ -533,13 +536,13 @@ function generate(){
     lines.push(`车型：${carName}`);
     lines.push(`路线：${route}`);
     lines.push(`费用明细：`);
-    lines.push(`  - 里程：${pointKm} km × ${rateKm} 元/km = ${calcFee.toFixed(1)}元`);
-    lines.push(`  - 最低消费：${minFee}元`);
-    lines.push(`  - 基础车费：${Math.round(baseFee)}元`);
+    lines.push(`  · 里程：${pointKm} km × ${rateKm} 元/km = ${calcFee.toFixed(1)}元`);
+    lines.push(`  · 最低消费：${minFee}元`);
+    lines.push(`  · 基础车费：${Math.round(baseFee)}元`);
     let total = Math.round(baseFee) + park;
     lastTotal = total;
-    lines.push(`  - 路桥停车：${park}元`);
-    lines.push(`----------------`);
+    lines.push(`  · 路桥停车：${park}元`);
+    lines.push(`——————————————`);
     lines.push(`总计：${total}元`);
   }
   document.getElementById('bill_output').innerText = lines.join('\n');

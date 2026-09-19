@@ -59,6 +59,8 @@ th{font-size:12px;color:#6b7280;font-weight:600;background:#fafbfc}
 td{font-size:13px}
 .bill-text{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.55;background:#f9fafb;border-radius:8px;padding:8px 10px;max-height:96px;overflow:hidden;margin:0}
 .bill-text.expanded{max-height:none}
+/* 已收钱账单：Markdown 删除线（~~文本~~）对应的渲染效果 */
+.bill-text.paid-line{text-decoration:line-through;text-decoration-thickness:1px;color:#9ca3af;background:#f3f4f6}
 .expand-link{color:#007AFF;font-size:12px;cursor:pointer;margin-top:4px;display:inline-block}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:12px;font-weight:600}
 .badge.paid{background:#dcfce7;color:#16a34a}
@@ -379,7 +381,7 @@ function renderTable(){
       <td><strong>${esc(o.received || '')}</strong></td>
       <td>@${esc(o.contact)}</td>
       <td>
-        <pre class="bill-text" id="bt_${o.id}">${esc(o.content)}</pre>
+        <pre class="bill-text ${paid?'paid-line':''}" id="bt_${o.id}">${esc(o.content)}</pre>
         <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
         <button class="btn-gray" style="padding:4px 10px;font-size:12px;" onclick="copyOrder(${o.id})">复制账单</button>
       </td>
@@ -405,7 +407,7 @@ function renderMobile(){
         <span class="badge ${paid?'paid':'unpaid'}">${paid?'已收钱':'未收钱'}</span>
       </div>
       <div class="m-meta">日期：${esc(o.date)} ｜ 总金额：<strong>${esc(o.amount || '-')}元</strong> ｜ 实收：<strong>${esc(o.received || '-')}元</strong> ｜ 对接人：@${esc(o.contact)} ｜ 单号：#${o.id}</div>
-      <pre class="bill-text" id="mb_${o.id}">${esc(o.content)}</pre>
+      <pre class="bill-text ${paid?'paid-line':''}" id="mb_${o.id}">${esc(o.content)}</pre>
       <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
       <div class="m-actions">
         <button class="btn-gray" style="padding:6px 10px;font-size:12px;" onclick="copyOrder(${o.id})">复制账单</button>
