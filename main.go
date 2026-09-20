@@ -810,7 +810,7 @@ func memosCreate(cfg memosConfig, content string) (string, error) {
 	// 旧版 Memos: {"id":123}
 	var memoRef string
 	if v, ok := raw["name"].(string); ok && v != "" {
-		memoRef = v
+		memoRef = strings.TrimPrefix(v, "memos/")
 	} else if v, ok := raw["id"].(float64); ok && v > 0 {
 		memoRef = fmt.Sprintf("%d", int64(v))
 	}
