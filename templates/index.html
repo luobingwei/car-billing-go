@@ -360,6 +360,20 @@ function generateQuote(lang){
     const sep = "——————————————";
 
     if(currentType === "transfer"){
+        // 附加服务：两车型同价就合并一行
+        const sameAddOn = (r.transfer.normal_sign === r.transfer.van_sign && r.transfer.normal_night === r.transfer.van_night);
+        let addOnZh, addOnEn;
+        if (sameAddOn) {
+          addOnZh = `举牌服务：¥${r.transfer.normal_sign}/次
+深夜服务费（23:00-05:00）：¥${r.transfer.normal_night}/次`;
+          addOnEn = `Meet & Greet: ¥${r.transfer.normal_sign}/trip
+Late-night Surcharge (23:00-05:00): ¥${r.transfer.normal_night}/trip`;
+        } else {
+          addOnZh = `舒适专车：举牌 ¥${r.transfer.normal_sign}/次 · 深夜 ¥${r.transfer.normal_night}/次
+7座MPV：举牌 ¥${r.transfer.van_sign}/次 · 深夜 ¥${r.transfer.van_night}/次`;
+          addOnEn = `Executive: Meet & Greet ¥${r.transfer.normal_sign}/trip · Late-night ¥${r.transfer.normal_night}/trip
+7-Seat MPV: Meet & Greet ¥${r.transfer.van_sign}/trip · Late-night ¥${r.transfer.van_night}/trip`;
+        }
         if(lang === "zh"){
             out = `【接送机报价】
 服务范围：佛山禅城/桂城
@@ -375,8 +389,7 @@ function generateQuote(lang){
     广州南站 ¥${r.transfer.van_station}
 
 附加服务：
-  · 舒适专车：举牌 ¥${r.transfer.normal_sign}/次 · 深夜 ¥${r.transfer.normal_night}/次
-  · 7座MPV：举牌 ¥${r.transfer.van_sign}/次 · 深夜 ¥${r.transfer.van_night}/次
+${addOnZh}
 ${sep}
 备注：单程包干价（含路桥/燃油），停车费实报`;
         }else{
@@ -394,8 +407,7 @@ Vehicles:
     Guangzhou South Station ¥${r.transfer.van_station}
 
 Add-on Services:
-  · Executive: Meet & Greet ¥${r.transfer.normal_sign}/trip · Late-night ¥${r.transfer.normal_night}/trip
-  · 7-Seat MPV: Meet & Greet ¥${r.transfer.van_sign}/trip · Late-night ¥${r.transfer.van_night}/trip
+${addOnEn}
 ${sep}
 Notes: One-way flat rate; parking at actual cost`;
         }
