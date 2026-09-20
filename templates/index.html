@@ -620,6 +620,10 @@ function generate(lang){
   }
   document.getElementById('copyBtn').style.display = 'block';
   document.getElementById('saveBtn').style.display = 'block';
+  const sbtn = document.getElementById('saveBtn');
+  sbtn.disabled = false;
+  sbtn.textContent = '📌 保存到记账本';
+  sbtn.style.background = '#FF9500';
 }
 /* ===== 一键复制到系统剪贴板（iPhone Safari 可靠方案） ===== */
 function copyText(text) {
@@ -667,13 +671,16 @@ async function saveOrder() {
   if (!text) { toast('请先生成账单'); return; }
   const firmIdx = document.getElementById("firmSelect").value;
   if (firmIdx === "") { toast('请先选择合作公司'); return; }
+  const btn = document.getElementById('saveBtn');
+  if (btn.disabled) return;  // 防重复点击
   const company = firmData[firmIdx].name;
   const date = document.getElementById("time").value;
   const contact = document.getElementById("contact").value.trim();
-  // 总金额：优先从结果文本解析（手动改过的账单也准确），解析不到用输入框值
   const parsed = parseAmountFromText(text);
   const amount = parsed !== null ? parsed : document.getElementById("billAmount").value.trim();
   const received = document.getElementById("receivedAmount").value.trim() || amount;
+  btn.disabled = true;
+  btn.textContent = '⏳ 保存中...';
   try {
     const res = await fetch('/api/order/save', {
       method: 'POST',
@@ -683,14 +690,19 @@ async function saveOrder() {
     const data = await res.json();
     if (data.ok) {
       toast('✅ 已保存到记账本');
-      const btn = document.getElementById('saveBtn');
-      btn.textContent = '✅ 已保存（可继续生成下一单）';
-      setTimeout(() => { btn.textContent = '📌 保存到记账本'; }, 3000);
+      btn.textContent = '✅ 已保存';
+      btn.style.background = '#34C759';
     } else {
       toast('保存失败：' + (data.error || '未知错误'));
+      btn.disabled = false;
+      btn.textContent = '📌 保存到记账本';
+      btn.style.background = '#FF9500';
     }
   } catch (e) {
     toast('保存失败，请确认服务已启动');
+    btn.disabled = false;
+    btn.textContent = '📌 保存到记账本';
+    btn.style.background = '#FF9500';
   }
 }
 window.onload = renderAllHistory;
