@@ -103,7 +103,7 @@ td{font-size:13px}
 </div>
 
 <div class="tab-nav">
-  <button class="active" onclick="switchAdminTab('firms',this)">费率配置</button>
+  <button class="active" onclick="switchAdminTab('firms',this)">设置</button>
   <button onclick="switchAdminTab('orders',this)">记账管理</button>
 </div>
 
@@ -227,6 +227,15 @@ td{font-size:13px}
 <button class="btn-blue">新增保存</button>
 </form>
 </div>
+
+<!-- Memos 推送配置 -->
+<div class="card">
+<h4>📒 Memos 推送配置</h4>
+<div class="tip">配置后，前台保存账单自动推送到你的 Memos；勾「已收钱」时 Memos 笔记自动加/去删除线。留空则不推送。</div>
+<div class="form-item"><label>Memos 地址（如 http://你的IP:5230）</label><input id="memosUrl" placeholder="http://192.168.1.100:5230"></div>
+<div class="form-item"><label>Access Token（Memos 设置里生成）</label><input id="memosToken" placeholder="memos_xxxxxxxx"></div>
+<button class="btn-blue" onclick="saveMemosConfig()">保存 Memos 配置</button>
+</div>
 </div>
 
 <!-- ============ Tab2 记账管理（新增） ============ -->
@@ -309,6 +318,26 @@ function switchAdminTab(name, btn){
     document.getElementById('tab-firms').classList.toggle('show', name === 'firms');
     document.getElementById('tab-orders').classList.toggle('show', name === 'orders');
     if (name === 'orders') loadOrders();
+}
+
+/* ===== Memos 配置 ===== */
+async function loadMemosConfig(){
+  const r = await fetch('/api/memos/config');
+  const d = await r.json();
+  if(d.ok){
+    document.getElementById('memosUrl').value = d.url || '';
+    document.getElementById('memosToken').value = d.token || '';
+  }
+}
+async function saveMemosConfig(){
+  const url = document.getElementById('memosUrl').value.trim();
+  const token = document.getElementById('memosToken').value.trim();
+  const r = await fetch('/api/memos/config', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({url, token})
+  });
+  const d = await r.json();
+  toast(d.ok ? '已保存' : '保存失败');
 }
 
 /* ===== 记账管理 ===== */
@@ -485,8 +514,8 @@ async function restoreBackup(input){
     toast('恢复失败，请检查网络');
   }
   input.value = '';
-}
+loadMemosConfig();
 </script>
-<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.0.1</div>
+<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.0</div>
 </body>
 </html>

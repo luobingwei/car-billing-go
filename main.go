@@ -227,6 +227,7 @@ type Order struct {
 	Contact   string `json:"contact"`
 	Content   string `json:"content"`
 	Paid      int    `json:"paid"`
+	MemoID    int64  `json:"memo_id"` // 已推送到 Memos 的笔记 ID（0=未推送）
 	CreatedAt string `json:"created_at"`
 }
 
@@ -290,6 +291,11 @@ func openOrdersDB(path string) (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+	// Memos 同步：已推送的笔记 ID（0=未推送）
+	if err := ensureColumn(db, "orders", "memo_id", "memo_id INTEGER NOT NULL DEFAULT 0"); err != nil {
+		db.Close()
+		return nil, err
+	}
 	// 历史记录表（前台输入历史，存数据库而非浏览器 localStorage，换设备/清缓存不丢）
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS history (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -309,15 +315,31 @@ func openOrdersDB(path string) (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+	// 系统设置表（key-value）：Memos 地址 / 账号 / Token 等
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS settings (
+		key TEXT PRIMARY KEY,
+		value TEXT NOT NULL DEFAULT ''
+	)`); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 
 // ---------- 前台历史记录（存 SQLite，每类最多 10 条） ----------
 
 // histKinds 历史记录分类（与 index.html 输入项一致）
-var histKinds = map[string]bool{"contact": true, "customer": true, "flight": true, "route": true}
+var histKinds = map[string]bool{"contact": true, "customer": true, "flight": true, "route": true, "extra_name": true}
 
-// handleHistorySave 保存一条历史（前台免登录）：去重后保留最新 10 条
+// histLimit 每类历史保留条数（其他费用明目只用 5 条，其余 10 条）
+func histLimit(kind string) int {
+	if kind == "extra_name" {
+		return 4 // 保留 4 条 + 新插入 1 条 = 5 条
+	}
+	return 9 // 保留 9 条 + 新插入 1 条 = 10 条
+}
+
+// handleHistorySave 保存一条历史（前台免登录）：去重后保留最新 N 条
 func (a *app) handleHistorySave(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]interface{}{"ok": false, "error": "POST only"})
@@ -348,9 +370,9 @@ func (a *app) handleHistorySave(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
 	}
-	// 只保留最新 9 条，再加新的这条 = 10 条
+	// 只保留最新 N-1 条，再加新的这条 = N 条
 	if _, err := tx.Exec(`DELETE FROM history WHERE kind = ? AND id NOT IN
-		(SELECT id FROM history WHERE kind = ? ORDER BY id DESC LIMIT 9)`, d.Kind, d.Kind); err != nil {
+		(SELECT id FROM history WHERE kind = ? ORDER BY id DESC LIMIT ?)`, d.Kind, d.Kind, histLimit(d.Kind)); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
 	}
@@ -714,6 +736,129 @@ func (a *app) requireAuth(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// ---------- 系统设置（key-value）+ Memos 推送 ----------
+
+func (a *app) getSetting(key string) string {
+	var v string
+	a.db.QueryRow("SELECT value FROM settings WHERE key = ?", key).Scan(&v)
+	return v
+}
+func (a *app) setSetting(key, value string) error {
+	_, err := a.db.Exec("INSERT OR REPLACE INTO settings(key, value) VALUES(?, ?)", key, value)
+	return err
+}
+
+type memosConfig struct {
+	URL   string
+	Token string
+}
+
+func (a *app) memosConfig() memosConfig {
+	return memosConfig{
+		URL:   strings.TrimRight(a.getSetting("memos_url"), "/"),
+		Token: strings.TrimSpace(a.getSetting("memos_token")),
+	}
+}
+
+func sanitizeTag(s string) string {
+	s = strings.TrimSpace(s)
+	r := strings.NewReplacer(" ", "", "#", "", "/", "-", "（", "", "）", "", "(", "", ")", "")
+	return r.Replace(s)
+}
+
+// buildMemoContent 构建推送到 Memos 的文本（标签 + 正文；已收款正文包 ~~删除线~~）
+func buildMemoContent(o *Order) string {
+	tag := "#用车"
+	if o.Company != "" {
+		tag += " #" + sanitizeTag(o.Company)
+	}
+	if o.Date != "" {
+		tag += " #" + sanitizeTag(o.Date)
+	}
+	if o.Paid == 1 {
+		return tag + "\n~~\n" + o.Content + "\n~~"
+	}
+	return tag + "\n" + o.Content
+}
+
+// memosCreate 创建一条 memo，返回 memo id
+func memosCreate(cfg memosConfig, content string) (int64, error) {
+	if cfg.URL == "" || cfg.Token == "" {
+		return 0, nil
+	}
+	body, _ := json.Marshal(map[string]interface{}{
+		"content":    content,
+		"visibility": "PRIVATE",
+	})
+	req, err := http.NewRequest("POST", cfg.URL+"/api/v1/memos", bytes.NewReader(body))
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+	var r struct {
+		ID int64 `json:"id"`
+	}
+	json.NewDecoder(resp.Body).Decode(&r)
+	if r.ID == 0 {
+		return 0, fmt.Errorf("memos 创建失败")
+	}
+	return r.ID, nil
+}
+
+// memosUpdate 更新已有 memo 的内容
+func memosUpdate(cfg memosConfig, memoID int64, content string) error {
+	if cfg.URL == "" || cfg.Token == "" || memoID == 0 {
+		return nil
+	}
+	body, _ := json.Marshal(map[string]interface{}{"content": content})
+	req, err := http.NewRequest("PATCH",
+		fmt.Sprintf("%s/api/v1/memos/%d", cfg.URL, memoID), bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	resp.Body.Close()
+	return nil
+}
+
+// handleMemosConfig 读取/保存 Memos 连接配置
+func (a *app) handleMemosConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		writeJSON(w, http.StatusOK, map[string]interface{}{
+			"ok":    true,
+			"url":   a.getSetting("memos_url"),
+			"token": a.getSetting("memos_token"),
+		})
+		return
+	}
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]interface{}{"ok": false, "error": "GET/POST only"})
+		return
+	}
+	var d struct {
+		URL   string `json:"url"`
+		Token string `json:"token"`
+	}
+	if err := readJSON(r, &d); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "请求格式错误"})
+		return
+	}
+	a.setSetting("memos_url", strings.TrimSpace(d.URL))
+	a.setSetting("memos_token", strings.TrimSpace(d.Token))
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true})
+}
+
 // 保存订单（前台调用，无需登录）
 func (a *app) handleOrderSave(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -746,6 +891,16 @@ func (a *app) handleOrderSave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, _ := res.LastInsertId()
+
+	// 自动推送到 Memos（配置了才推），成功后把 memo_id 存库
+	cfg := a.memosConfig()
+	if cfg.URL != "" && cfg.Token != "" {
+		o := &Order{Company: d.Company, Date: strings.TrimSpace(d.Date), Content: d.Content, Paid: 0}
+		if memoID, err := memosCreate(cfg, buildMemoContent(o)); err == nil && memoID > 0 {
+			a.db.Exec("UPDATE orders SET memo_id = ? WHERE id = ?", memoID, id)
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": id})
 }
 
@@ -774,7 +929,7 @@ func (a *app) handleOrderList(w http.ResponseWriter, r *http.Request) {
 		where = " WHERE " + strings.Join(conds, " AND ")
 	}
 
-	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, content, paid, created_at FROM orders"+where+" ORDER BY id DESC", args...)
+	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, content, paid, memo_id, created_at FROM orders"+where+" ORDER BY id DESC", args...)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
@@ -785,7 +940,7 @@ func (a *app) handleOrderList(w http.ResponseWriter, r *http.Request) {
 	total, unpaid := 0, 0
 	for rows.Next() {
 		var o Order
-		if err := rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Content, &o.Paid, &o.CreatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Content, &o.Paid, &o.MemoID, &o.CreatedAt); err != nil {
 			continue
 		}
 		orders = append(orders, o)
@@ -844,6 +999,20 @@ func (a *app) handleOrderToggle(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
 	}
+
+	// 同步 Memos：已收款加删除线，未收款去掉删除线
+	var memoID int64
+	var company, date, content string
+	a.db.QueryRow("SELECT memo_id, company, date, content FROM orders WHERE id = ?", d.ID).
+		Scan(&memoID, &company, &date, &content)
+	if memoID > 0 {
+		cfg := a.memosConfig()
+		if cfg.URL != "" && cfg.Token != "" {
+			o := &Order{Company: company, Date: date, Content: content, Paid: newPaid}
+			memosUpdate(cfg, memoID, buildMemoContent(o))
+		}
+	}
+
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": d.ID, "paid": newPaid})
 }
 
@@ -1142,6 +1311,7 @@ func main() {
 	mux.HandleFunc("/api/order/toggle", a.requireAuth(a.handleOrderToggle))
 	mux.HandleFunc("/api/order/delete", a.requireAuth(a.handleOrderDelete))
 	mux.HandleFunc("/api/order/export", a.requireAuth(a.handleOrderExport))
+	mux.HandleFunc("/api/memos/config", a.requireAuth(a.handleMemosConfig))
 	// 前台历史记录（存数据库）
 	mux.HandleFunc("/api/history/save", a.handleHistorySave) // 前台保存，无需登录
 	mux.HandleFunc("/api/history/list", a.handleHistoryList) // 前台读取，无需登录

@@ -179,12 +179,10 @@ input, select {
       <!--__FIRM_OPTIONS__-->
     </select>
 
-    <label>报价模板语言</label>
-    <select id="quoteLang">
-        <option value="zh">中文</option>
-        <option value="en">English 英文</option>
-    </select>
-    <button class="btn-green" onclick="generateQuote()">📄生成【当前标签页】报价</button>
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn-green" onclick="generateQuote('zh')" style="flex:2;">📄 中文版报价</button>
+      <button class="btn-green" onclick="generateQuote('en')" style="flex:1;font-size:13px;">📄 English</button>
+    </div>
 
     <label>@对接人</label>
     <input id="contact" placeholder="输入名字，自动带 @">
@@ -245,16 +243,24 @@ input, select {
     <div class="history-pills" id="hist_route"></div>
     <label>路桥停车费（实报实销）</label>
     <input id="park" value="0">
-    <button class="btn" onclick="generate()">生成单次用车账单</button>
+    <label>其他费用明目（选填）</label>
+    <input id="extra_name" placeholder="如：咖啡">
+    <div class="history-pills" id="hist_extra_name"></div>
+    <label>其他费用金额（选填）</label>
+    <input id="extraAmount" type="number" step="0.01" min="0" value="0">
+    <label>实收金额（选填，留空=费用合计）</label>
+    <input id="receivedAmount" type="number" step="0.01" min="0" placeholder="留空则等于费用合计">
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn" onclick="generate('zh')" style="flex:2;">生成中文版账单</button>
+      <button class="btn" onclick="generate('en')" style="flex:1;font-size:13px;">English</button>
+    </div>
   </div>
   <div class="card">
     <h3>账单文本（可复制）</h3>
     <div id="bill_output" class="bill"></div>
     <div style="margin-top:12px;">
-      <label style="display:block;font-size:13px;color:#666;margin-bottom:4px;">账单总金额（元）— 保存时自动从账单文本识别，可手动改</label>
-      <input type="number" id="billAmount" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;margin-bottom:8px;" placeholder="自动从账单文本识别">
-      <label style="display:block;font-size:13px;color:#666;margin-bottom:4px;">实收金额（元）— 实际收到的钱，默认等于总金额，可改</label>
-      <input type="number" id="receivedAmount" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;" placeholder="默认等于总金额">
+      <label style="display:block;font-size:13px;color:#666;margin-bottom:4px;">账单总金额（元）— 保存时自动从账单文本识别</label>
+      <input type="number" id="billAmount" step="0.01" min="0" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:8px;font-size:15px;" placeholder="自动从账单文本识别">
     </div>
     <button class="copy-btn" onclick="copyBill()" id="copyBtn" style="display:none;">✅ 一键复制账单</button>
     <button class="copy-btn" onclick="saveOrder()" id="saveBtn" style="display:none;background:#FF9500;">📌 保存到记账本</button>
@@ -321,6 +327,7 @@ function renderAllHistory() {
     renderHistory('customer', 'hist_customer', h.customer);
     renderHistory('flight', 'hist_flight', h.flight);
     renderHistory('route', 'hist_route', h.route);
+    renderHistory('extra_name', 'hist_extra_name', h.extra_name);
   }).catch(() => {});
 }
 /* 历史记录按钮点击 → 填入对应输入框（事件委托，避免引号注入） */
@@ -339,63 +346,104 @@ function calcHour(start,end){
 }
 
 // ==========生成当前tab对应的报价，价格读取选中公司后台配置==========
-function generateQuote(){
+function generateQuote(lang){
     const idx = document.getElementById("firmSelect").value;
-    const lang = document.getElementById("quoteLang").value;
     if(idx === ""){
         alert("请先选择合作公司");
         return;
     }
     const r = firmData[idx];
     let out = "";
+    const sep = "——————————————";
 
     if(currentType === "transfer"){
         if(lang === "zh"){
             out = `【接送机报价】
-一、机场/高铁站接或送
-服务范围：佛山禅城/桂城 ↔ 广州白云机场/南站（往或返）
-1. 舒适专车：机场¥${r.transfer.normal_airport}，高铁站¥${r.transfer.normal_station}
-2. 六座豪华商务车：机场¥${r.transfer.van_airport}，高铁站¥${r.transfer.van_station}
-附加服务：举牌接人¥${r.transfer.sign_fee}/次；深夜服务费（23:00‑05:00）¥${r.transfer.night_fee}/次
+服务范围：佛山禅城/桂城
+往返：广州白云机场 / 广州南站
+（双向接送，接/送均可）
+
+车型报价：
+  · 舒适专车
+    白云机场 ¥${r.transfer.normal_airport}
+    广州南站 ¥${r.transfer.normal_station}
+  · 六座豪华商务车
+    白云机场 ¥${r.transfer.van_airport}
+    广州南站 ¥${r.transfer.van_station}
+
+附加服务：
+  · 举牌服务：¥${r.transfer.sign_fee}/次
+  · 深夜服务费（23:00-05:00）：¥${r.transfer.night_fee}/次
+${sep}
 备注：单程包干价（含路桥/燃油），停车费实报`;
         }else{
-            out = `【Transfer Quotation】
-1. Airport/Railway Station Transfer
-Service Area: Chancheng/Guicheng(Foshan) ↔ Guangzhou Baiyun Airport / South Railway Station
-① Executive Car: Airport ¥${r.transfer.normal_airport}, Railway Station ¥${r.transfer.normal_station}
-② 6‑Seater Premium MPV: Airport ¥${r.transfer.van_airport}, Railway Station ¥${r.transfer.van_station}
-Additional Services: Meet & Greet: ¥${r.transfer.sign_fee}/per trip; Late‑night Surcharge(23:00‑05:00): ¥${r.transfer.night_fee}/per trip
-Notes: One‑way all-inclusive(tolls/fuel); parking fees at actual cost`;
+            out = `【Airport Transfer Quotation】
+Service Area: Chancheng/Guicheng (Foshan)
+↔ Baiyun Airport / Guangzhou South Station
+(pick-up or drop-off)
+
+Vehicles:
+  · Executive
+    Baiyun Airport ¥${r.transfer.normal_airport}
+    Guangzhou South Station ¥${r.transfer.normal_station}
+  · 7-Seat Executive MPV
+    Baiyun Airport ¥${r.transfer.van_airport}
+    Guangzhou South Station ¥${r.transfer.van_station}
+
+Add-on Services:
+  · Meet & Greet: ¥${r.transfer.sign_fee}/trip
+  · Late-night Surcharge (23:00-05:00): ¥${r.transfer.night_fee}/trip
+${sep}
+Notes: One-way flat rate; parking at actual cost`;
         }
     }else if(currentType === "package"){
         if(lang === "zh"){
             out = `【包车报价】
-计费规则：套餐含固定时长/里程，超时/超里程额外计费
-1. 舒适专车：¥${r.package.normal_4h}（4h/50km）、¥${r.package.normal_8h}（8h/100km）；超时¥${r.package.normal_over_h}/h，超里程¥${r.package.normal_over_km}/km
-2. 六座商务车：¥${r.package.van_4h}（4h/50km）、¥${r.package.van_8h}（8h/100km）；超时¥${r.package.van_over_h}/h，超里程¥${r.package.van_over_km}/km
-其他费用：路桥/停车费实报`;
+  · 舒适专车
+    ¥${r.package.normal_4h}（4 小时 / 50 公里）
+    ¥${r.package.normal_8h}（8 小时 / 100 公里）
+    超时 ¥${r.package.normal_over_h}/小时 · 超里程 ¥${r.package.normal_over_km}/公里
+  · 六座豪华商务车
+    ¥${r.package.van_4h}（4 小时 / 50 公里）
+    ¥${r.package.van_8h}（8 小时 / 100 公里）
+    超时 ¥${r.package.van_over_h}/小时 · 超里程 ¥${r.package.van_over_km}/公里
+${sep}
+备注：套餐含固定时长里程，超时、超里程另计
+路桥停车实报`;
         }else{
-            out = `【Daily Charter Quotation】
-1. Daily Charter Service
-Billing: Package with allotted hrs/km; extra for overtime/additional mileage
-① Executive Car: ¥${r.package.normal_4h}(4h/50km), ¥${r.package.normal_8h}(8h/100km); Overtime:¥${r.package.normal_over_h}/h, Extra mileage:¥${r.package.normal_over_km}/km
-② 6‑Seater MPV: ¥${r.package.van_4h}(4h/50km), ¥${r.package.van_8h}(8h/100km); Overtime:¥${r.package.van_over_h}/h, Extra mileage:¥${r.package.van_over_km}/km
-Other Fees: Tolls/parking at actual cost`;
+            out = `【Hourly Charter Quotation】
+  · Executive
+    ¥${r.package.normal_4h} (4 Hours / 50 km)
+    ¥${r.package.normal_8h} (8 Hours / 100 km)
+    Overtime ¥${r.package.normal_over_h}/h · Extra Mileage ¥${r.package.normal_over_km}/km
+  · 7-Seat Executive MPV
+    ¥${r.package.van_4h} (4 Hours / 50 km)
+    ¥${r.package.van_8h} (8 Hours / 100 km)
+    Overtime ¥${r.package.van_over_h}/h · Extra Mileage ¥${r.package.van_over_km}/km
+${sep}
+Notes: Package includes fixed hours/km.
+Overtime & extra mileage charged additionally.
+Tolls & parking at actual cost.`;
         }
     }else if(currentType === "point"){
         if(lang === "zh"){
             out = `【点对点报价】
-计费规则：按里程计费，设最低消费（取较高值）
-1. 舒适专车：¥${r.point.normal_rate}/km，最低¥${r.point.normal_min}
-2. 六座商务车：¥${r.point.van_rate}/km，最低¥${r.point.van_min}
-计算：总费用=基础车费（里程费/最低消费取高）+ 实报路桥/停车费`;
+  · 舒适专车
+    ¥${r.point.normal_rate}/公里，最低 ¥${r.point.normal_min}
+  · 六座豪华商务车
+    ¥${r.point.van_rate}/公里，最低 ¥${r.point.van_min}
+${sep}
+备注：按里程计费，里程费与最低消费取高者；路桥停车实报`;
         }else{
-            out = `【Point‑to‑Point Quotation】
-1. Point‑to‑Point (Distance‑Based)
-Billing: Fare by distance; minimum fare applies(higher amount adopted)
-① Executive Car:¥${r.point.normal_rate}/km, Min.¥${r.point.normal_min}
-② 6‑Seater MPV:¥${r.point.van_rate}/km, Min.¥${r.point.van_min}
-Calculation: Total=Base Fare + Actual Tolls/Parking`;
+            out = `【Point-to-Point Quotation】
+  · Executive
+    ¥${r.point.normal_rate}/km, Minimum Fare ¥${r.point.normal_min}
+  · 7-Seat Executive MPV
+    ¥${r.point.van_rate}/km, Minimum Fare ¥${r.point.van_min}
+${sep}
+Notes: Fare by distance.
+Higher of mileage fare and minimum fare applies.
+Tolls & parking at actual cost.`;
         }
     }
 
@@ -411,14 +459,15 @@ async function copyQuote(){
     else{ alert("复制失败，请手动长按复制文本"); }
 }
 
-// ==========原有单次账单生成==========
-function generate(){
+// ==========单次账单生成（lang: zh/en）==========
+function generate(lang){
   const firmIdx = document.getElementById("firmSelect").value;
   if(firmIdx===""){
     alert("请先选择合作公司");
     return;
   }
   const rate = firmData[firmIdx];
+  const isEn = lang === 'en';
 
   let val=id=>document.getElementById(id).value.trim();
   let num=id=>Number(document.getElementById(id).value)||0;
@@ -429,10 +478,13 @@ function generate(){
   let flight = val('flight');
   let route = val('route').replace(/\s+/g, ' → ');
   let park = num('park');
+  let extraName = val('extra_name');
+  let extraAmount = num('extraAmount');
   saveHistory('contact', contact);
   saveHistory('customer', customer);
   saveHistory('flight', flight);
   saveHistory('route', val('route'));
+  saveHistory('extra_name', extraName);
 
   let transferKind = val("transferKind");
   let startT = val('startHour');
@@ -444,24 +496,26 @@ function generate(){
   let signSel = num('sign');
   let nightSel = num('night');
 
-  let carName = car === 'normal' ? '舒适专车' : '六座豪华商务车';
+  let carName = car === 'normal'
+    ? (isEn ? 'Executive' : '舒适专车')
+    : (isEn ? '7-Seat Executive MPV' : '六座豪华商务车');
   let fmtDate = '';
   if(date){
     const [y,m,d] = date.split('-');
-    fmtDate = `${y}年${m}月${d}日`;
+    fmtDate = isEn ? `${y}-${m}-${d}` : `${y}年${m}月${d}日`;
   }
+  const yuan = isEn ? '' : '元';
   let lastTotal = 0;
   let lines=[];
   if(contact){
-    const cleanContact = String(contact).replace(/^@+/, ''); // 去掉用户手动输入的开头@，统一只输出一个@
+    const cleanContact = String(contact).replace(/^@+/, '');
     lines.push(`@${cleanContact}`);
   }
-  lines.push(`客户：${customer}`);
+  lines.push(`${isEn?'Customer':'客户'}：${customer}`);
 
   if(currentType === 'transfer'){
     const tr = rate.transfer;
     let base;
-    let transferTitle = transferKind==="airport" ? "机场" : "高铁站";
     if(car==='normal'){
       base = transferKind==="airport" ? tr.normal_airport : tr.normal_station;
     }else{
@@ -470,20 +524,21 @@ function generate(){
     let signFee = signSel ? tr.sign_fee : 0;
     let nightFee = nightSel ? tr.night_fee : 0;
 
-    if(flight) lines.push(`航班：${flight}`);
-    lines.push(`时间：${fmtDate}`);
-    lines.push(`类型：接送机（${transferTitle}）`);
-    lines.push(`车型：${carName}`);
-    lines.push(`路线：${route}`);
-    lines.push(`费用明细：`);
-    lines.push(`  · 基础车费：${base}元`);
-    if(signFee>0) lines.push(`  · 举牌服务：${signFee}元`);
-    if(nightFee>0) lines.push(`  · 深夜服务费：${nightFee}元`);
-    let total = base + signFee + nightFee + park;
+    if(flight) lines.push(`${isEn?'Flight No.':'航班'}：${flight}`);
+    lines.push(`${isEn?'Date':'时间'}：${fmtDate}`);
+    lines.push(`${isEn?'Type':'类型'}：${isEn?'Airport Transfer':'接送机'}`);
+    lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
+    lines.push(`${isEn?'Route':'路线'}：${route}`);
+    lines.push(`${isEn?'Fare Breakdown':'费用明细'}：`);
+    lines.push(`  · ${isEn?'Base Fare':'基础车费'}：¥${base}${yuan}`);
+    if(signFee>0) lines.push(`  · ${isEn?'Meet & Greet':'举牌服务'}：¥${signFee}${yuan}`);
+    if(nightFee>0) lines.push(`  · ${isEn?'Late-night Surcharge':'深夜服务费'}：¥${nightFee}${yuan}`);
+    let total = base + signFee + nightFee + park + (extraName ? extraAmount : 0);
     lastTotal = total;
-    lines.push(`  · 路桥停车：${park}元`);
+    lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
+    if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`总计：${total}元`);
+    lines.push(`${isEn?'Total':'费用合计'}：¥${total}${yuan}`);
   }
   else if(currentType === 'package'){
     const pk = rate.package;
@@ -503,21 +558,22 @@ function generate(){
     let overKm = Math.max(0, km - baseKm);
     let overHourPrice = overHour * hourPrice;
     let overKmPrice = overKm * kmPrice;
-    let sum = basePrice + overHourPrice + overKmPrice + park;
+    let sum = basePrice + overHourPrice + overKmPrice + park + (extraName ? extraAmount : 0);
     lastTotal = sum;
-    lines.push(`服务日期：${fmtDate}`);
-    lines.push(`使用车型：[√]${carName}`);
-    lines.push(`套餐选择：[√]${baseHour} 小时/${baseKm} 公里套餐`);
-    lines.push(`用车时间：${startT} 至 ${endT}（共 ${totalHour.toFixed(1)} 小时）`);
-    lines.push(`行驶里程：${km} 公里`);
-    lines.push(`行程路线：${route}`);
-    lines.push(`费用计算：`);
-    lines.push(`· 套餐基础费：${basePrice}元`);
-    lines.push(`· 超时费：${overHour.toFixed(1)} 小时 × ${hourPrice}元 = ${overHourPrice}元`);
-    lines.push(`· 超里程费：${overKm} 公里 × ${kmPrice}元 = ${overKmPrice}元`);
-    lines.push(`· 路桥停车费（实报实销）：${park}元`);
+    lines.push(`${isEn?'Service Date':'服务日期'}：${fmtDate}`);
+    lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
+    lines.push(`${isEn?'Package':'套餐'}：${baseHour} h / ${baseKm} km`);
+    lines.push(`${isEn?'Service Hours':'用车时间'}：${startT} - ${endT}（${totalHour.toFixed(1)} h）`);
+    lines.push(`${isEn?'Distance':'行驶里程'}：${km} km`);
+    lines.push(`${isEn?'Route':'行程路线'}：${route}`);
+    lines.push(`${isEn?'Fare Breakdown':'费用明细'}：`);
+    lines.push(`  · ${isEn?'Package Fare':'套餐基础费'}：¥${basePrice}${yuan}`);
+    lines.push(`  · ${isEn?'Overtime':'超时费'}：${overHour.toFixed(1)} h × ¥${hourPrice}/h = ¥${overHourPrice}${yuan}`);
+    lines.push(`  · ${isEn?'Extra Mileage':'超里程费'}：${overKm} km × ¥${kmPrice}/km = ¥${overKmPrice}${yuan}`);
+    lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
+    if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`费用合计：${sum}元`);
+    lines.push(`${isEn?'Total':'费用合计'}：¥${sum}${yuan}`);
   }
   else {
     const pt = rate.point;
@@ -531,23 +587,34 @@ function generate(){
     }
     let calcFee = pointKm * rateKm;
     let baseFee = Math.max(calcFee, minFee);
-    lines.push(`时间：${fmtDate}`);
-    lines.push(`类型：点对点`);
-    lines.push(`车型：${carName}`);
-    lines.push(`路线：${route}`);
-    lines.push(`费用明细：`);
-    lines.push(`  · 里程：${pointKm} km × ${rateKm} 元/km = ${calcFee.toFixed(1)}元`);
-    lines.push(`  · 最低消费：${minFee}元`);
-    lines.push(`  · 基础车费：${Math.round(baseFee)}元`);
-    let total = Math.round(baseFee) + park;
+    lines.push(`${isEn?'Date':'时间'}：${fmtDate}`);
+    lines.push(`${isEn?'Type':'类型'}：${isEn?'Point-to-Point':'点对点'}`);
+    lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
+    lines.push(`${isEn?'Route':'路线'}：${route}`);
+    lines.push(`${isEn?'Fare Breakdown':'费用明细'}：`);
+    lines.push(`  · ${isEn?'Distance':'里程'}：${pointKm} km × ¥${rateKm}/km = ¥${calcFee.toFixed(1)}${yuan}`);
+    lines.push(`  · ${isEn?'Minimum Fare':'最低消费'}：¥${minFee}${yuan}`);
+    lines.push(`  · ${isEn?'Base Fare':'基础车费'}：¥${Math.round(baseFee)}${yuan}`);
+    let total = Math.round(baseFee) + park + (extraName ? extraAmount : 0);
     lastTotal = total;
-    lines.push(`  · 路桥停车：${park}元`);
+    lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
+    if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`总计：${total}元`);
+    lines.push(`${isEn?'Total':'费用合计'}：¥${total}${yuan}`);
   }
+
+  // 实收金额：填了才在合计下方加一行
+  const receivedRaw = document.getElementById('receivedAmount').value.trim();
+  if(receivedRaw !== ''){
+    lines.push(`${isEn?'Amount Received':'实收金额'}：¥${receivedRaw}${yuan}`);
+  }
+
   document.getElementById('bill_output').innerText = lines.join('\n');
   document.getElementById('billAmount').value = lastTotal || '';
-  document.getElementById('receivedAmount').value = lastTotal || '';
+  // 实收框为空才自动填合计，已有值保留
+  if(!document.getElementById('receivedAmount').value.trim()){
+    document.getElementById('receivedAmount').value = lastTotal || '';
+  }
   document.getElementById('copyBtn').style.display = 'block';
   document.getElementById('saveBtn').style.display = 'block';
 }
@@ -625,6 +692,6 @@ async function saveOrder() {
 }
 window.onload = renderAllHistory;
 </script>
-<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.0.1</div>
+<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.0</div>
 </body>
 </html>
