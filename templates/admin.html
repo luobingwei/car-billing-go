@@ -93,6 +93,15 @@ td{font-size:13px}
   .filters .f-item{flex:1 1 45%}
   .filters input,.filters select{min-width:0}
 }
+/* 两列：左舒适右MPV */
+.two-col{display:flex;gap:12px}
+.two-col .col{flex:1;min-width:0}
+.two-col .col h5{font-size:13px;color:#666;margin:0 0 6px;font-weight:600}
+@media(max-width:600px){
+  .two-col{flex-direction:row}
+  .two-col .col .form-item label{font-size:11px}
+  .two-col .col .form-item input{font-size:13px;padding:8px}
+}
 </style>
 </head>
 <body>
@@ -103,12 +112,12 @@ td{font-size:13px}
 </div>
 
 <div class="tab-nav">
-  <button class="active" onclick="switchAdminTab('firms',this)">设置</button>
-  <button onclick="switchAdminTab('orders',this)">记账管理</button>
+  <button class="active" onclick="switchAdminTab('orders',this)">记账管理</button>
+  <button onclick="switchAdminTab('firms',this)">设置</button>
 </div>
 
-<!-- ============ Tab1 费率配置（原有功能） ============ -->
-<div class="tab-panel show" id="tab-firms">
+<!-- ============ Tab2 设置 ============ -->
+<div class="tab-panel" id="tab-firms">
 <div class="tip">接送机区分机场/高铁站价格；包车、点对点独立配置；单位全部为人民币元。点击板块标题展开/折叠</div>
 {{range $i, $f := .Firms}}
 <div class="card">
@@ -122,44 +131,62 @@ td{font-size:13px}
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机配置</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机</div>
   <div class="accordion-body">
-    <div class="form-item"><label>舒适专车‑机场单程价(元)</label><input name="tr_normal_airport" value="{{$f.Transfer.NormalAirport}}" placeholder="示例：250"></div>
-    <div class="form-item"><label>舒适专车‑高铁站单程价(元)</label><input name="tr_normal_station" value="{{$f.Transfer.NormalStation}}" placeholder="示例：150"></div>
-    <div class="form-item"><label>六座商务‑机场单程价(元)</label><input name="tr_van_airport" value="{{$f.Transfer.VanAirport}}" placeholder="示例：350"></div>
-    <div class="form-item"><label>六座商务‑高铁站单程价(元)</label><input name="tr_van_station" value="{{$f.Transfer.VanStation}}" placeholder="示例：250"></div>
-    <div class="form-item"><label>举牌接人服务费/次(元)</label><input name="tr_sign" value="{{$f.Transfer.SignFee}}" placeholder="示例：20"></div>
-    <div class="form-item"><label>深夜服务费(23:00‑05:00)/次(元)</label><input name="tr_night" value="{{$f.Transfer.NightFee}}" placeholder="示例：100"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>机场单程(元)</label><input name="tr_normal_airport" value="{{$f.Transfer.NormalAirport}}" placeholder="250"></div>
+        <div class="form-item"><label>高铁站单程(元)</label><input name="tr_normal_station" value="{{$f.Transfer.NormalStation}}" placeholder="150"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>机场单程(元)</label><input name="tr_van_airport" value="{{$f.Transfer.VanAirport}}" placeholder="350"></div>
+        <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" value="{{$f.Transfer.VanStation}}" placeholder="250"></div>
+      </div>
+    </div>
+    <div class="form-item"><label>举牌服务(元/次)</label><input name="tr_sign" value="{{$f.Transfer.SignFee}}" placeholder="20"></div>
+    <div class="form-item"><label>深夜服务费(元/次)</label><input name="tr_night" value="{{$f.Transfer.NightFee}}" placeholder="100"></div>
   </div>
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜舒适专车</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车</div>
   <div class="accordion-body">
-    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_n4" value="{{$f.Package.Normal4H}}" placeholder="示例：300"></div>
-    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_n8" value="{{$f.Package.Normal8H}}" placeholder="示例：600"></div>
-    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_noh" value="{{$f.Package.NormalOverH}}" placeholder="示例：80"></div>
-    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_nokm" value="{{$f.Package.NormalOverKm}}" placeholder="示例：4"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>4h/50km(元)</label><input name="pk_n4" value="{{$f.Package.Normal4H}}" placeholder="350"></div>
+        <div class="form-item"><label>8h/100km(元)</label><input name="pk_n8" value="{{$f.Package.Normal8H}}" placeholder="700"></div>
+        <div class="form-item"><label>超时(元/小时)</label><input name="pk_noh" value="{{$f.Package.NormalOverH}}" placeholder="80"></div>
+        <div class="form-item"><label>超里程(元/km)</label><input name="pk_nokm" value="{{$f.Package.NormalOverKm}}" placeholder="4"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>4h/50km(元)</label><input name="pk_v4" value="{{$f.Package.Van4H}}" placeholder="500"></div>
+        <div class="form-item"><label>8h/100km(元)</label><input name="pk_v8" value="{{$f.Package.Van8H}}" placeholder="1000"></div>
+        <div class="form-item"><label>超时(元/小时)</label><input name="pk_voh" value="{{$f.Package.VanOverH}}" placeholder="100"></div>
+        <div class="form-item"><label>超里程(元/km)</label><input name="pk_vokm" value="{{$f.Package.VanOverKm}}" placeholder="5"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜六座豪华商务车</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点</div>
   <div class="accordion-body">
-    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_v4" value="{{$f.Package.Van4H}}" placeholder="示例：400"></div>
-    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_v8" value="{{$f.Package.Van8H}}" placeholder="示例：800"></div>
-    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_voh" value="{{$f.Package.VanOverH}}" placeholder="示例：100"></div>
-    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_vokm" value="{{$f.Package.VanOverKm}}" placeholder="示例：5"></div>
-  </div>
-</div>
-
-<div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点（按里程计费）</div>
-  <div class="accordion-body">
-    <div class="form-item"><label>舒适专车‑每公里单价(元/km)</label><input name="pt_nr" value="{{$f.Point.NormalRate}}" placeholder="示例：4.5"></div>
-    <div class="form-item"><label>舒适专车‑最低消费(元)</label><input name="pt_nmin" value="{{$f.Point.NormalMin}}" placeholder="示例：100"></div>
-    <div class="form-item"><label>六座商务‑每公里单价(元/km)</label><input name="pt_vr" value="{{$f.Point.VanRate}}" placeholder="示例：6"></div>
-    <div class="form-item"><label>六座商务‑最低消费(元)</label><input name="pt_vmin" value="{{$f.Point.VanMin}}" placeholder="示例：150"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>每公里(元)</label><input name="pt_nr" value="{{$f.Point.NormalRate}}" placeholder="4.5"></div>
+        <div class="form-item"><label>最低消费(元)</label><input name="pt_nmin" value="{{$f.Point.NormalMin}}" placeholder="100"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>每公里(元)</label><input name="pt_vr" value="{{$f.Point.VanRate}}" placeholder="6.5"></div>
+        <div class="form-item"><label>最低消费(元)</label><input name="pt_vmin" value="{{$f.Point.VanMin}}" placeholder="100"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -183,44 +210,62 @@ td{font-size:13px}
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机配置</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 接送机</div>
   <div class="accordion-body">
-    <div class="form-item"><label>舒适专车‑机场单程价(元)</label><input name="tr_normal_airport" placeholder="示例：250"></div>
-    <div class="form-item"><label>舒适专车‑高铁站单程价(元)</label><input name="tr_normal_station" placeholder="示例：150"></div>
-    <div class="form-item"><label>六座商务‑机场单程价(元)</label><input name="tr_van_airport" placeholder="示例：350"></div>
-    <div class="form-item"><label>六座商务‑高铁站单程价(元)</label><input name="tr_van_station" placeholder="示例：250"></div>
-    <div class="form-item"><label>举牌接人服务费/次(元)</label><input name="tr_sign" placeholder="示例：20"></div>
-    <div class="form-item"><label>深夜服务费/次(元)</label><input name="tr_night" placeholder="示例：100"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>机场单程(元)</label><input name="tr_normal_airport" placeholder="250"></div>
+        <div class="form-item"><label>高铁站单程(元)</label><input name="tr_normal_station" placeholder="150"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>机场单程(元)</label><input name="tr_van_airport" placeholder="350"></div>
+        <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" placeholder="250"></div>
+      </div>
+    </div>
+    <div class="form-item"><label>举牌服务(元/次)</label><input name="tr_sign" placeholder="20"></div>
+    <div class="form-item"><label>深夜服务费(元/次)</label><input name="tr_night" placeholder="100"></div>
   </div>
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜舒适专车</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车</div>
   <div class="accordion-body">
-    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_n4" placeholder="示例：300"></div>
-    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_n8" placeholder="示例：600"></div>
-    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_noh" placeholder="示例：80"></div>
-    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_nokm" placeholder="示例：4"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>4h/50km(元)</label><input name="pk_n4" placeholder="350"></div>
+        <div class="form-item"><label>8h/100km(元)</label><input name="pk_n8" placeholder="700"></div>
+        <div class="form-item"><label>超时(元/小时)</label><input name="pk_noh" placeholder="80"></div>
+        <div class="form-item"><label>超里程(元/km)</label><input name="pk_nokm" placeholder="4"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>4h/50km(元)</label><input name="pk_v4" placeholder="500"></div>
+        <div class="form-item"><label>8h/100km(元)</label><input name="pk_v8" placeholder="1000"></div>
+        <div class="form-item"><label>超时(元/小时)</label><input name="pk_voh" placeholder="100"></div>
+        <div class="form-item"><label>超里程(元/km)</label><input name="pk_vokm" placeholder="5"></div>
+      </div>
+    </div>
   </div>
 </div>
 
 <div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 包车｜六座豪华商务车</div>
+  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点</div>
   <div class="accordion-body">
-    <div class="form-item"><label>4小时/50km套餐基础价(元)</label><input name="pk_v4" placeholder="示例：400"></div>
-    <div class="form-item"><label>8小时/100km套餐基础价(元)</label><input name="pk_v8" placeholder="示例：800"></div>
-    <div class="form-item"><label>超时单价(元/小时)</label><input name="pk_voh" placeholder="示例：100"></div>
-    <div class="form-item"><label>超里程单价(元/km)</label><input name="pk_vokm" placeholder="示例：5"></div>
-  </div>
-</div>
-
-<div class="accordion-item">
-  <div class="accordion-head collapsed" onclick="toggleAcc(this)">🚩 点对点（按里程计费）</div>
-  <div class="accordion-body">
-    <div class="form-item"><label>舒适专车‑每公里单价(元/km)</label><input name="pt_nr" placeholder="示例：4.5"></div>
-    <div class="form-item"><label>舒适专车‑最低消费(元)</label><input name="pt_nmin" placeholder="示例：100"></div>
-    <div class="form-item"><label>六座商务‑每公里单价(元/km)</label><input name="pt_vr" placeholder="示例：6"></div>
-    <div class="form-item"><label>六座商务‑最低消费(元)</label><input name="pt_vmin" placeholder="示例：150"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>每公里(元)</label><input name="pt_nr" placeholder="4.5"></div>
+        <div class="form-item"><label>最低消费(元)</label><input name="pt_nmin" placeholder="100"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>每公里(元)</label><input name="pt_vr" placeholder="6.5"></div>
+        <div class="form-item"><label>最低消费(元)</label><input name="pt_vmin" placeholder="100"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -238,8 +283,8 @@ td{font-size:13px}
 </div>
 </div>
 
-<!-- ============ Tab2 记账管理（新增） ============ -->
-<div class="tab-panel" id="tab-orders">
+<!-- ============ Tab1 记账管理 ============ -->
+<div class="tab-panel show" id="tab-orders">
   <div class="stats">
     <div class="stat"><div class="lbl">全部订单</div><div class="num" id="stTotal">0</div></div>
     <div class="stat unpaid"><div class="lbl">未收钱</div><div class="num" id="stUnpaid">0</div></div>
@@ -318,6 +363,7 @@ function switchAdminTab(name, btn){
     document.getElementById('tab-firms').classList.toggle('show', name === 'firms');
     document.getElementById('tab-orders').classList.toggle('show', name === 'orders');
     if (name === 'orders') loadOrders();
+    if (name === 'firms') loadMemosConfig();
 }
 
 /* ===== Memos 配置 ===== */

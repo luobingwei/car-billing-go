@@ -190,7 +190,7 @@ input, select {
     <label>客户</label>
     <input id="customer">
     <div class="history-pills" id="hist_customer"></div>
-    <label>服务日期</label>
+    <label>日期</label>
     <input id="time" type="date">
 
     <div id="transfer_panel" class="tab-panel">
@@ -527,8 +527,8 @@ function generate(lang){
     let signFee = signSel ? tr.sign_fee : 0;
     let nightFee = nightSel ? tr.night_fee : 0;
 
+    lines.push(`${isEn?'Date':'日期'}：${fmtDate}`);
     if(flight) lines.push(`${isEn?'Flight No.':'航班'}：${flight}`);
-    lines.push(`${isEn?'Date':'时间'}：${fmtDate}`);
     lines.push(`${isEn?'Type':'类型'}：${isEn?'Airport Transfer':'接送机'}`);
     lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
     lines.push(`${isEn?'Route':'路线'}：${route}`);
@@ -541,7 +541,7 @@ function generate(lang){
     lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
     if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`${isEn?'Total':'费用合计'}：¥${total}${yuan}`);
+    lines.push(`${isEn?'Trip Total':'本单小计'}：¥${total}${yuan}`);
   }
   else if(currentType === 'package'){
     const pk = rate.package;
@@ -557,13 +557,13 @@ function generate(lang){
       hourPrice = pk.van_over_h;
       kmPrice = pk.van_over_km;
     }
-    let overHour = Math.max(0, totalHour - baseHour);
+    let overHour = Math.ceil(Math.max(0, totalHour - baseHour));
     let overKm = Math.max(0, km - baseKm);
     let overHourPrice = overHour * hourPrice;
     let overKmPrice = overKm * kmPrice;
-    let sum = basePrice + overHourPrice + overKmPrice + park + (extraName ? extraAmount : 0);
+    let sum = Math.round((basePrice + overHourPrice + overKmPrice + park + (extraName ? extraAmount : 0)) * 100) / 100;
     lastTotal = sum;
-    lines.push(`${isEn?'Service Date':'服务日期'}：${fmtDate}`);
+    lines.push(`${isEn?'Date':'日期'}：${fmtDate}`);
     lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
     lines.push(`${isEn?'Package':'套餐'}：${baseHour} h / ${baseKm} km`);
     lines.push(`${isEn?'Service Hours':'用车时间'}：${startT} - ${endT}（${totalHour.toFixed(1)} h）`);
@@ -571,12 +571,12 @@ function generate(lang){
     lines.push(`${isEn?'Route':'行程路线'}：${route}`);
     lines.push(`${isEn?'Fare Breakdown':'费用明细'}：`);
     lines.push(`  · ${isEn?'Package Fare':'套餐基础费'}：¥${basePrice}${yuan}`);
-    lines.push(`  · ${isEn?'Overtime':'超时费'}：${overHour.toFixed(1)} h × ¥${hourPrice}/h = ¥${overHourPrice}${yuan}`);
+    lines.push(`  · ${isEn?'Overtime':'超时费'}：${overHour} h × ¥${hourPrice}/h = ¥${overHourPrice}${yuan}`);
     lines.push(`  · ${isEn?'Extra Mileage':'超里程费'}：${overKm} km × ¥${kmPrice}/km = ¥${overKmPrice}${yuan}`);
     lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
     if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`${isEn?'Total':'费用合计'}：¥${sum}${yuan}`);
+    lines.push(`${isEn?'Trip Total':'本单小计'}：¥${sum}${yuan}`);
   }
   else {
     const pt = rate.point;
@@ -590,7 +590,7 @@ function generate(lang){
     }
     let calcFee = pointKm * rateKm;
     let baseFee = Math.max(calcFee, minFee);
-    lines.push(`${isEn?'Date':'时间'}：${fmtDate}`);
+    lines.push(`${isEn?'Date':'日期'}：${fmtDate}`);
     lines.push(`${isEn?'Type':'类型'}：${isEn?'Point-to-Point':'点对点'}`);
     lines.push(`${isEn?'Vehicle':'车型'}：${carName}`);
     lines.push(`${isEn?'Route':'路线'}：${route}`);
