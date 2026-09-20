@@ -766,7 +766,7 @@ func sanitizeTag(s string) string {
 	return r.Replace(s)
 }
 
-// buildMemoContent 构建推送到 Memos 的文本（标签 + 正文；已收款正文包 ~~删除线~~）
+// buildMemoContent 构建推送到 Memos 的文本（标签 + 正文；已收款头尾包 ~~删除线~~）
 func buildMemoContent(o *Order) string {
 	tag := "#用车"
 	if o.Company != "" {
@@ -798,15 +798,33 @@ func memosCreate(cfg memosConfig, content string) (int64, error) {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Println("[memos] 创建请求失败:", err)
 		return 0, err
 	}
 	defer resp.Body.Close()
+	respBody, _ := io.ReadAll(resp.Body)
+	fmt.Printf("[memos] 创建响应 status=%d body=%s\n", resp.StatusCode, string(respBody))
+	// 兼容 id 为数字或字符串
 	var r struct {
-		ID int64 `json:"id"`
+		ID   int64  `json:"id"`
+		IDStr string `json:"-"`
 	}
-	json.NewDecoder(resp.Body).Decode(&r)
+	_ = json.Unmarshal(respBody, &r)
 	if r.ID == 0 {
-		return 0, fmt.Errorf("memos 创建失败")
+		// 尝试字符串 id
+		var raw map[string]interface{}
+		json.Unmarshal(respBody, &raw)
+		if v, ok := raw["id"]; ok {
+			switch n := v.(type) {
+			case float64:
+				r.ID = int64(n)
+			case string:
+				fmt.Sscanf(n, "%d", &r.ID)
+			}
+		}
+	}
+	if r.ID == 0 {
+		return 0, fmt.Errorf("memos 创建失败 (status=%d)", resp.StatusCode)
 	}
 	return r.ID, nil
 }
@@ -817,8 +835,8 @@ func memosUpdate(cfg memosConfig, memoID int64, content string) error {
 		return nil
 	}
 	body, _ := json.Marshal(map[string]interface{}{"content": content})
-	req, err := http.NewRequest("PATCH",
-		fmt.Sprintf("%s/api/v1/memos/%d", cfg.URL, memoID), bytes.NewReader(body))
+	url := fmt.Sprintf("%s/api/v1/memos/%d", cfg.URL, memoID)
+	req, err := http.NewRequest("PATCH", url, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}
@@ -826,9 +844,12 @@ func memosUpdate(cfg memosConfig, memoID int64, content string) error {
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
+		fmt.Println("[memos] 更新请求失败:", err)
 		return err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	fmt.Printf("[memos] 更新响应 status=%d body=%s\n", resp.StatusCode, string(rb))
 	return nil
 }
 
