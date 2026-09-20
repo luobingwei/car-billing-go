@@ -227,7 +227,7 @@ type Order struct {
 	Contact   string `json:"contact"`
 	Content   string `json:"content"`
 	Paid      int    `json:"paid"`
-	MemoID    int64  `json:"memo_id"` // 已推送到 Memos 的笔记 ID（0=未推送）
+	MemoID    string `json:"memo_id"` // 已推送到 Memos 的笔记标识（空=未推送）
 	CreatedAt string `json:"created_at"`
 }
 
@@ -292,7 +292,7 @@ func openOrdersDB(path string) (*sql.DB, error) {
 		return nil, err
 	}
 	// Memos 同步：已推送的笔记 ID（0=未推送）
-	if err := ensureColumn(db, "orders", "memo_id", "memo_id INTEGER NOT NULL DEFAULT 0"); err != nil {
+	if err := ensureColumn(db, "orders", "memo_id", "memo_id TEXT NOT NULL DEFAULT ''"); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -781,10 +781,10 @@ func buildMemoContent(o *Order) string {
 	return tag + "\n" + o.Content
 }
 
-// memosCreate 创建一条 memo，返回 memo id
-func memosCreate(cfg memosConfig, content string) (int64, error) {
+// memosCreate 创建一条 memo，返回 memo name（新版 Memos 是 memos/xxx，旧版是数字 id）
+func memosCreate(cfg memosConfig, content string) (string, error) {
 	if cfg.URL == "" || cfg.Token == "" {
-		return 0, nil
+		return "", nil
 	}
 	body, _ := json.Marshal(map[string]interface{}{
 		"content":    content,
@@ -792,50 +792,42 @@ func memosCreate(cfg memosConfig, content string) (int64, error) {
 	})
 	req, err := http.NewRequest("POST", cfg.URL+"/api/v1/memos", bytes.NewReader(body))
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 	req.Header.Set("Authorization", "Bearer "+cfg.Token)
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		fmt.Println("[memos] 创建请求失败:", err)
-		return 0, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(resp.Body)
 	fmt.Printf("[memos] 创建响应 status=%d body=%s\n", resp.StatusCode, string(respBody))
-	// 兼容 id 为数字或字符串
-	var r struct {
-		ID   int64  `json:"id"`
-		IDStr string `json:"-"`
+	var raw map[string]interface{}
+	json.Unmarshal(respBody, &raw)
+	// 新版 Memos: {"name":"memos/5qbZ6DhJocxBbk4SE85LQB"}
+	// 旧版 Memos: {"id":123}
+	var memoRef string
+	if v, ok := raw["name"].(string); ok && v != "" {
+		memoRef = v
+	} else if v, ok := raw["id"].(float64); ok && v > 0 {
+		memoRef = fmt.Sprintf("%d", int64(v))
 	}
-	_ = json.Unmarshal(respBody, &r)
-	if r.ID == 0 {
-		// 尝试字符串 id
-		var raw map[string]interface{}
-		json.Unmarshal(respBody, &raw)
-		if v, ok := raw["id"]; ok {
-			switch n := v.(type) {
-			case float64:
-				r.ID = int64(n)
-			case string:
-				fmt.Sscanf(n, "%d", &r.ID)
-			}
-		}
+	if memoRef == "" {
+		return "", fmt.Errorf("memos 创建失败 (status=%d)", resp.StatusCode)
 	}
-	if r.ID == 0 {
-		return 0, fmt.Errorf("memos 创建失败 (status=%d)", resp.StatusCode)
-	}
-	return r.ID, nil
+	return memoRef, nil
 }
 
 // memosUpdate 更新已有 memo 的内容
-func memosUpdate(cfg memosConfig, memoID int64, content string) error {
-	if cfg.URL == "" || cfg.Token == "" || memoID == 0 {
+func memosUpdate(cfg memosConfig, memoRef string, content string) error {
+	if cfg.URL == "" || cfg.Token == "" || memoRef == "" {
 		return nil
 	}
 	body, _ := json.Marshal(map[string]interface{}{"content": content})
-	url := fmt.Sprintf("%s/api/v1/memos/%d", cfg.URL, memoID)
+	// memoRef 可能是 "memos/xxx" 或纯数字 id
+	url := fmt.Sprintf("%s/api/v1/memos/%s", cfg.URL, memoRef)
 	req, err := http.NewRequest("PATCH", url, bytes.NewReader(body))
 	if err != nil {
 		return err
@@ -913,12 +905,12 @@ func (a *app) handleOrderSave(w http.ResponseWriter, r *http.Request) {
 	}
 	id, _ := res.LastInsertId()
 
-	// 自动推送到 Memos（配置了才推），成功后把 memo_id 存库
+	// 自动推送到 Memos（配置了才推），成功后把 memo 标识存库
 	cfg := a.memosConfig()
 	if cfg.URL != "" && cfg.Token != "" {
 		o := &Order{Company: d.Company, Date: strings.TrimSpace(d.Date), Content: d.Content, Paid: 0}
-		if memoID, err := memosCreate(cfg, buildMemoContent(o)); err == nil && memoID > 0 {
-			a.db.Exec("UPDATE orders SET memo_id = ? WHERE id = ?", memoID, id)
+		if memoRef, err := memosCreate(cfg, buildMemoContent(o)); err == nil && memoRef != "" {
+			a.db.Exec("UPDATE orders SET memo_id = ? WHERE id = ?", memoRef, id)
 		}
 	}
 
@@ -1022,15 +1014,14 @@ func (a *app) handleOrderToggle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 同步 Memos：已收款加删除线，未收款去掉删除线
-	var memoID int64
-	var company, date, content string
+	var memoRef, company, date, content string
 	a.db.QueryRow("SELECT memo_id, company, date, content FROM orders WHERE id = ?", d.ID).
-		Scan(&memoID, &company, &date, &content)
-	if memoID > 0 {
+		Scan(&memoRef, &company, &date, &content)
+	if memoRef != "" {
 		cfg := a.memosConfig()
 		if cfg.URL != "" && cfg.Token != "" {
 			o := &Order{Company: company, Date: date, Content: content, Paid: newPaid}
-			memosUpdate(cfg, memoID, buildMemoContent(o))
+			memosUpdate(cfg, memoRef, buildMemoContent(o))
 		}
 	}
 

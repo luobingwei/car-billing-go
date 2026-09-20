@@ -243,17 +243,17 @@ input, select {
     <div class="history-pills" id="hist_route"></div>
     <label>路桥停车费（实报实销）</label>
     <input id="park" value="0">
-    <div style="display:flex;gap:8px;align-items:flex-end;">
+    <div style="display:flex;gap:8px;">
       <div style="flex:2;">
         <label>其他费用明目（选填）</label>
         <input id="extra_name" placeholder="如：咖啡">
-        <div class="history-pills" id="hist_extra_name"></div>
       </div>
       <div style="flex:1;">
         <label>金额（选填）</label>
         <input id="extraAmount" type="number" step="0.01" min="0" value="0">
       </div>
     </div>
+    <div class="history-pills" id="hist_extra_name"></div>
     <label>实收金额（选填，留空=费用合计）</label>
     <input id="receivedAmount" type="number" step="0.01" min="0" placeholder="留空则等于费用合计">
     <div style="display:flex;gap:8px;margin-top:12px;">
