@@ -776,7 +776,7 @@ func buildMemoContent(o *Order) string {
 		tag += " #" + sanitizeTag(o.Date)
 	}
 	if o.Paid == 1 {
-		return tag + "\n~~\n" + o.Content + "\n~~"
+		return tag + "\n~~" + o.Content + "~~"
 	}
 	return tag + "\n" + o.Content
 }
