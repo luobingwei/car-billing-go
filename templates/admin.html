@@ -145,8 +145,18 @@ td{font-size:13px}
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" value="{{$f.Transfer.VanStation}}" placeholder="250"></div>
       </div>
     </div>
-    <div class="form-item"><label>举牌服务(元/次)</label><input name="tr_sign" value="{{$f.Transfer.SignFee}}" placeholder="20"></div>
-    <div class="form-item"><label>深夜服务费(元/次)</label><input name="tr_night" value="{{$f.Transfer.NightFee}}" placeholder="100"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>举牌(元/次)</label><input name="tr_nsign" value="{{$f.Transfer.NormalSign}}" placeholder="20"></div>
+        <div class="form-item"><label>深夜(元/次)</label><input name="tr_nnight" value="{{$f.Transfer.NormalNight}}" placeholder="100"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>举牌(元/次)</label><input name="tr_vsign" value="{{$f.Transfer.VanSign}}" placeholder="20"></div>
+        <div class="form-item"><label>深夜(元/次)</label><input name="tr_vnight" value="{{$f.Transfer.VanNight}}" placeholder="100"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -224,8 +234,18 @@ td{font-size:13px}
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" placeholder="250"></div>
       </div>
     </div>
-    <div class="form-item"><label>举牌服务(元/次)</label><input name="tr_sign" placeholder="20"></div>
-    <div class="form-item"><label>深夜服务费(元/次)</label><input name="tr_night" placeholder="100"></div>
+    <div class="two-col">
+      <div class="col">
+        <h5>舒适专车</h5>
+        <div class="form-item"><label>举牌(元/次)</label><input name="tr_nsign" placeholder="20"></div>
+        <div class="form-item"><label>深夜(元/次)</label><input name="tr_nnight" placeholder="100"></div>
+      </div>
+      <div class="col">
+        <h5>7座MPV</h5>
+        <div class="form-item"><label>举牌(元/次)</label><input name="tr_vsign" placeholder="20"></div>
+        <div class="form-item"><label>深夜(元/次)</label><input name="tr_vnight" placeholder="100"></div>
+      </div>
+    </div>
   </div>
 </div>
 

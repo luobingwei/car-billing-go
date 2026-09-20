@@ -375,8 +375,8 @@ function generateQuote(lang){
     广州南站 ¥${r.transfer.van_station}
 
 附加服务：
-  · 举牌服务：¥${r.transfer.sign_fee}/次
-  · 深夜服务费（23:00-05:00）：¥${r.transfer.night_fee}/次
+  · 舒适专车：举牌 ¥${r.transfer.normal_sign}/次 · 深夜 ¥${r.transfer.normal_night}/次
+  · 7座MPV：举牌 ¥${r.transfer.van_sign}/次 · 深夜 ¥${r.transfer.van_night}/次
 ${sep}
 备注：单程包干价（含路桥/燃油），停车费实报`;
         }else{
@@ -394,8 +394,8 @@ Vehicles:
     Guangzhou South Station ¥${r.transfer.van_station}
 
 Add-on Services:
-  · Meet & Greet: ¥${r.transfer.sign_fee}/trip
-  · Late-night Surcharge (23:00-05:00): ¥${r.transfer.night_fee}/trip
+  · Executive: Meet & Greet ¥${r.transfer.normal_sign}/trip · Late-night ¥${r.transfer.normal_night}/trip
+  · 7-Seat MPV: Meet & Greet ¥${r.transfer.van_sign}/trip · Late-night ¥${r.transfer.van_night}/trip
 ${sep}
 Notes: One-way flat rate; parking at actual cost`;
         }
@@ -524,8 +524,8 @@ function generate(lang){
     }else{
       base = transferKind==="airport" ? tr.van_airport : tr.van_station;
     }
-    let signFee = signSel ? tr.sign_fee : 0;
-    let nightFee = nightSel ? tr.night_fee : 0;
+    let signFee = signSel ? (car==='normal' ? tr.normal_sign : tr.van_sign) : 0;
+    let nightFee = nightSel ? (car==='normal' ? tr.normal_night : tr.van_night) : 0;
 
     lines.push(`${isEn?'Date':'日期'}：${fmtDate}`);
     if(flight) lines.push(`${isEn?'Flight No.':'航班'}：${flight}`);

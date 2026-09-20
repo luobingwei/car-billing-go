@@ -69,8 +69,10 @@ type Transfer struct {
 	NormalStation float64 `json:"normal_station"`
 	VanAirport    float64 `json:"van_airport"`
 	VanStation    float64 `json:"van_station"`
-	SignFee       float64 `json:"sign_fee"`
-	NightFee      float64 `json:"night_fee"`
+	NormalSign    float64 `json:"normal_sign"`
+	VanSign       float64 `json:"van_sign"`
+	NormalNight   float64 `json:"normal_night"`
+	VanNight      float64 `json:"van_night"`
 }
 
 type Package struct {
@@ -185,6 +187,22 @@ func (a *app) loadFirms() ([]Firm, error) {
 		f.Name = name
 		if err := json.Unmarshal([]byte(data), &f); err != nil {
 			continue
+		}
+		// 旧数据兼容：如果新字段为0，从旧字段 sign_fee/night_fee 复制
+		if f.Transfer.NormalSign == 0 && f.Transfer.VanSign == 0 {
+			var raw map[string]map[string]float64
+			if json.Unmarshal([]byte(data), &raw) == nil {
+				if tr, ok := raw["transfer"]; ok {
+					if v, ok := tr["sign_fee"]; ok && v > 0 {
+						f.Transfer.NormalSign = v
+						f.Transfer.VanSign = v
+					}
+					if v, ok := tr["night_fee"]; ok && v > 0 {
+						f.Transfer.NormalNight = v
+						f.Transfer.VanNight = v
+					}
+				}
+			}
 		}
 		firms = append(firms, f)
 	}
@@ -685,8 +703,10 @@ func parseFirm(r *http.Request) Firm {
 			NormalStation: val("tr_normal_station"),
 			VanAirport:    val("tr_van_airport"),
 			VanStation:    val("tr_van_station"),
-			SignFee:       val("tr_sign"),
-			NightFee:      val("tr_night"),
+			NormalSign:    val("tr_nsign"),
+			VanSign:       val("tr_vsign"),
+			NormalNight:   val("tr_nnight"),
+			VanNight:      val("tr_vnight"),
 		},
 		Package: Package{
 			Normal4H:     val("pk_n4"),
@@ -766,7 +786,8 @@ func sanitizeTag(s string) string {
 	return r.Replace(s)
 }
 
-// buildMemoContent 构建推送到 Memos 的文本（标签 + 正文；已收款头尾包 ~~删除线~~）
+// buildMemoContent 构建推送到 Memos 的文本
+// 折叠策略：前3行（@对接人、客户、日期）+ 最后两行（本单小计、实收金额）直接显示，中间部分折叠
 func buildMemoContent(o *Order) string {
 	tag := "#用车"
 	if o.Company != "" {
@@ -775,10 +796,55 @@ func buildMemoContent(o *Order) string {
 	if o.Date != "" {
 		tag += " #" + sanitizeTag(o.Date)
 	}
-	if o.Paid == 1 {
-		return tag + "\n~~" + o.Content + "~~"
+
+	lines := strings.Split(o.Content, "\n")
+	// 找关键行位置
+	firstLines := []string{}  // 前3行：@对接人、客户、日期
+	lastLines := []string{}   // 最后：本单小计、实收金额
+	middleLines := []string{}
+
+	// 先找最后几行（本单小计/实收金额）
+	totalIdx := -1
+	for i, ln := range lines {
+		if strings.HasPrefix(ln, "本单小计") || strings.HasPrefix(ln, "Trip Total") {
+			totalIdx = i
+			break
+		}
 	}
-	return tag + "\n" + o.Content
+	if totalIdx >= 0 {
+		firstLines = lines[:3]
+		lastLines = lines[totalIdx:]
+		if totalIdx > 3 {
+			middleLines = lines[3:totalIdx]
+		}
+	} else {
+		firstLines = lines
+	}
+
+	// 组装
+	var b strings.Builder
+	b.WriteString(tag)
+	b.WriteString("\n")
+	b.WriteString(strings.Join(firstLines, "\n"))
+	if len(middleLines) > 0 {
+		b.WriteString("\n<details>\n<summary>展开明细</summary>\n\n")
+		b.WriteString(strings.Join(middleLines, "\n"))
+		b.WriteString("\n</details>")
+	}
+	if len(lastLines) > 0 {
+		b.WriteString("\n")
+		b.WriteString(strings.Join(lastLines, "\n"))
+	}
+
+	result := b.String()
+	if o.Paid == 1 {
+		// 已收款：整段包删除线（标签行不包）
+		parts := strings.SplitN(result, "\n", 2)
+		if len(parts) == 2 {
+			return parts[0] + "\n~~" + parts[1] + "~~"
+		}
+	}
+	return result
 }
 
 // memosCreate 创建一条 memo，返回 memo name（新版 Memos 是 memos/xxx，旧版是数字 id）
