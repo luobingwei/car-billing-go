@@ -603,7 +603,7 @@ function generate(lang){
     lines.push(`  · ${isEn?'Tolls & Parking':'路桥停车'}：¥${park}${yuan}`);
     if(extraName) lines.push(`  · ${extraName}：¥${extraAmount}${yuan}`);
     lines.push(`——————————————`);
-    lines.push(`${isEn?'Total':'费用合计'}：¥${total}${yuan}`);
+    lines.push(`${isEn?'Trip Total':'本单小计'}：¥${total}${yuan}`);
   }
 
   // 实收金额：填了才在合计下方加一行
@@ -647,9 +647,9 @@ function copyBill() {
   else toast('复制失败，请长按账单文本手动复制');
 }
 /* ===== 保存到记账本（写入服务器 SQLite 数据库） ===== */
-/* 从结果文本中解析总金额：支持「总计：X元」「费用合计：X元」，取最后一个 */
+/* 从结果文本中解析总金额：支持「本单小计：X元」「费用合计：X元」「总计：X元」，取最后一个 */
 function parseAmountFromText(text) {
-  const re = /(?:总计|费用合计)[：:]\s*([\d.]+)\s*元/g;
+  const re = /(?:本单小计|费用合计|总计)[：:]\s*([\d.]+)\s*元/g;
   let last = null;
   let m;
   while ((m = re.exec(text)) !== null) { last = m[1]; }

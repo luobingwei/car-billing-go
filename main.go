@@ -845,6 +845,27 @@ func memosUpdate(cfg memosConfig, memoRef string, content string) error {
 	return nil
 }
 
+// memosDelete 删除 Memos 笔记
+func memosDelete(cfg memosConfig, memoRef string) {
+	if cfg.URL == "" || cfg.Token == "" || memoRef == "" {
+		return
+	}
+	url := fmt.Sprintf("%s/api/v1/memos/%s", cfg.URL, memoRef)
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		fmt.Println("[memos] 删除请求失败:", err)
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+cfg.Token)
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("[memos] 删除请求失败:", err)
+		return
+	}
+	defer resp.Body.Close()
+	fmt.Printf("[memos] 删除响应 status=%d\n", resp.StatusCode)
+}
+
 // handleMemosConfig 读取/保存 Memos 连接配置
 func (a *app) handleMemosConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -1041,9 +1062,18 @@ func (a *app) handleOrderDelete(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "缺少订单ID"})
 		return
 	}
+	// 先查 memo_id，删数据库前同步删 Memos
+	var memoRef string
+	a.db.QueryRow("SELECT memo_id FROM orders WHERE id = ?", d.ID).Scan(&memoRef)
 	if _, err := a.db.Exec("DELETE FROM orders WHERE id = ?", d.ID); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
+	}
+	if memoRef != "" {
+		cfg := a.memosConfig()
+		if cfg.URL != "" && cfg.Token != "" {
+			memosDelete(cfg, memoRef)
+		}
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "id": d.ID})
 }
