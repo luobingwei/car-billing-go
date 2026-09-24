@@ -1,0 +1,32 @@
+{
+  "name": "用车账单系统",
+  "short_name": "用车账单",
+  "description": "接送机/包车/点对点用车账单与报价生成，对接人、记账、Memos 联动",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0D47A1",
+  "theme_color": "#0D47A1",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/pwa/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

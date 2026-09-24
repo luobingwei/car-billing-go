@@ -1377,6 +1377,8 @@ func main() {
 	mux.HandleFunc("/admin", a.handleAdmin)
 	mux.HandleFunc("/logout", a.handleLogout)
 	mux.HandleFunc("/healthz", handleHealth)
+	// PWA 静态资源（manifest / service worker / 图标）
+	mux.Handle("/pwa/", http.StripPrefix("/pwa/", http.FileServer(http.Dir(filepath.Join(templatesDir, "pwa")))))
 	// 订单记账 API
 	mux.HandleFunc("/api/order/save", a.handleOrderSave) // 前台保存，无需登录
 	mux.HandleFunc("/api/order/list", a.requireAuth(a.handleOrderList))
