@@ -187,6 +187,9 @@ input, select {
     <label>@对接人</label>
     <input id="contact" placeholder="输入名字，自动带 @">
     <div class="history-pills" id="hist_contact"></div>
+    <label>执行司机</label>
+    <input id="driver" placeholder="执行司机（仅后台对账用，不出现在账单）">
+    <div class="history-pills" id="hist_driver"></div>
     <label>客户</label>
     <input id="customer">
     <div class="history-pills" id="hist_customer"></div>
@@ -235,8 +238,8 @@ input, select {
 
     <label>车型</label>
     <select id="car">
-      <option value="normal">舒适车型 | Comfort</option>
-      <option value="van">六座豪华商务车 | Business</option>
+      <option value="normal">舒适专车 | Executive</option>
+      <option value="van">7座商务车 | 7-Seat Executive MPV</option>
     </select>
     <label>行程路线</label>
     <input id="route" placeholder="输入地址用空格分隔，自动转箭头">
@@ -327,6 +330,7 @@ function renderAllHistory() {
     if (!d.ok) return;
     const h = d.history || {};
     renderHistory('contact', 'hist_contact', h.contact);
+    renderHistory('driver', 'hist_driver', h.driver);
     renderHistory('customer', 'hist_customer', h.customer);
     renderHistory('flight', 'hist_flight', h.flight);
     renderHistory('route', 'hist_route', h.route);
@@ -384,7 +388,7 @@ Late-night Surcharge (23:00-05:00): ¥${r.transfer.normal_night}/trip`;
   · 舒适专车
     白云机场 ¥${r.transfer.normal_airport}
     广州南站 ¥${r.transfer.normal_station}
-  · 六座豪华商务车
+  · 7座商务车
     白云机场 ¥${r.transfer.van_airport}
     广州南站 ¥${r.transfer.van_station}
 
@@ -418,7 +422,7 @@ Notes: One-way flat rate; parking at actual cost`;
     ¥${r.package.normal_4h}（4 小时 / 50 公里）
     ¥${r.package.normal_8h}（8 小时 / 100 公里）
     超时 ¥${r.package.normal_over_h}/小时 · 超里程 ¥${r.package.normal_over_km}/公里
-  · 六座豪华商务车
+  · 7座商务车
     ¥${r.package.van_4h}（4 小时 / 50 公里）
     ¥${r.package.van_8h}（8 小时 / 100 公里）
     超时 ¥${r.package.van_over_h}/小时 · 超里程 ¥${r.package.van_over_km}/公里
@@ -445,7 +449,7 @@ Tolls & parking at actual cost.`;
             out = `【点对点报价】
   · 舒适专车
     ¥${r.point.normal_rate}/公里，最低 ¥${r.point.normal_min}
-  · 六座豪华商务车
+  · 7座商务车
     ¥${r.point.van_rate}/公里，最低 ¥${r.point.van_min}
 ${sep}
 备注：按里程计费，里程费与最低消费取高者；路桥停车实报`;
@@ -513,7 +517,7 @@ function generate(lang){
 
   let carName = car === 'normal'
     ? (isEn ? 'Executive' : '舒适专车')
-    : (isEn ? '7-Seat Executive MPV' : '六座豪华商务车');
+    : (isEn ? '7-Seat Executive MPV' : '7座商务车');
   let fmtDate = '';
   if(date){
     const [y,m,d] = date.split('-');
@@ -688,6 +692,7 @@ async function saveOrder() {
   const company = firmData[firmIdx].name;
   const date = document.getElementById("time").value;
   const contact = document.getElementById("contact").value.trim();
+  const driver = document.getElementById("driver").value.trim();
   const parsed = parseAmountFromText(text);
   const amount = parsed !== null ? parsed : document.getElementById("billAmount").value.trim();
   const received = document.getElementById("receivedAmount").value.trim() || amount;
@@ -697,11 +702,14 @@ async function saveOrder() {
     const res = await fetch('/api/order/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ company, date, amount, received, contact, content: text })
+      body: JSON.stringify({ company, date, amount, received, contact, driver, content: text })
     });
     const data = await res.json();
     if (data.ok) {
       toast('✅ 已保存到记账本');
+      saveHistory('contact', contact);
+      saveHistory('driver', driver);
+      saveHistory('customer', document.getElementById("customer").value.trim());
       btn.textContent = '✅ 已保存';
       btn.style.background = '#34C759';
     } else {
@@ -719,6 +727,6 @@ async function saveOrder() {
 }
 window.onload = renderAllHistory;
 </script>
-<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.0</div>
+<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.3</div>
 </body>
 </html>

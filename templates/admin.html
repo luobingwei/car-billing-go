@@ -17,6 +17,7 @@ button{padding:9px 12px;border:none;border-radius:8px;margin:4px;font-size:14px;
 .btn-red{background:#ff3b30;color:#fff}
 .btn-gray{background:#e5e7eb;color:#374151}
 .btn-green{background:#28c76f;color:#fff}
+.btn-orange{background:#FF9500;color:#fff}
 .tip{color:#666;font-size:12px;margin:4px 0 8px}
 h4{margin:8px 0}
 .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
@@ -93,7 +94,7 @@ td{font-size:13px}
   .filters .f-item{flex:1 1 45%}
   .filters input,.filters select{min-width:0}
 }
-/* 两列：左舒适右MPV */
+/* 两列：左舒适右商务 */
 .two-col{display:flex;gap:12px}
 .two-col .col{flex:1;min-width:0}
 .two-col .col h5{font-size:13px;color:#666;margin:0 0 6px;font-weight:600}
@@ -140,7 +141,7 @@ td{font-size:13px}
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_normal_station" value="{{$f.Transfer.NormalStation}}" placeholder="150"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>机场单程(元)</label><input name="tr_van_airport" value="{{$f.Transfer.VanAirport}}" placeholder="350"></div>
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" value="{{$f.Transfer.VanStation}}" placeholder="250"></div>
       </div>
@@ -152,7 +153,7 @@ td{font-size:13px}
         <div class="form-item"><label>深夜(元/次)</label><input name="tr_nnight" value="{{$f.Transfer.NormalNight}}" placeholder="100"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>举牌(元/次)</label><input name="tr_vsign" value="{{$f.Transfer.VanSign}}" placeholder="20"></div>
         <div class="form-item"><label>深夜(元/次)</label><input name="tr_vnight" value="{{$f.Transfer.VanNight}}" placeholder="100"></div>
       </div>
@@ -172,7 +173,7 @@ td{font-size:13px}
         <div class="form-item"><label>超里程(元/km)</label><input name="pk_nokm" value="{{$f.Package.NormalOverKm}}" placeholder="4"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>4h/50km(元)</label><input name="pk_v4" value="{{$f.Package.Van4H}}" placeholder="500"></div>
         <div class="form-item"><label>8h/100km(元)</label><input name="pk_v8" value="{{$f.Package.Van8H}}" placeholder="1000"></div>
         <div class="form-item"><label>超时(元/小时)</label><input name="pk_voh" value="{{$f.Package.VanOverH}}" placeholder="100"></div>
@@ -192,7 +193,7 @@ td{font-size:13px}
         <div class="form-item"><label>最低消费(元)</label><input name="pt_nmin" value="{{$f.Point.NormalMin}}" placeholder="100"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>每公里(元)</label><input name="pt_vr" value="{{$f.Point.VanRate}}" placeholder="6.5"></div>
         <div class="form-item"><label>最低消费(元)</label><input name="pt_vmin" value="{{$f.Point.VanMin}}" placeholder="100"></div>
       </div>
@@ -229,7 +230,7 @@ td{font-size:13px}
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_normal_station" placeholder="150"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>机场单程(元)</label><input name="tr_van_airport" placeholder="350"></div>
         <div class="form-item"><label>高铁站单程(元)</label><input name="tr_van_station" placeholder="250"></div>
       </div>
@@ -241,7 +242,7 @@ td{font-size:13px}
         <div class="form-item"><label>深夜(元/次)</label><input name="tr_nnight" placeholder="100"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>举牌(元/次)</label><input name="tr_vsign" placeholder="20"></div>
         <div class="form-item"><label>深夜(元/次)</label><input name="tr_vnight" placeholder="100"></div>
       </div>
@@ -261,7 +262,7 @@ td{font-size:13px}
         <div class="form-item"><label>超里程(元/km)</label><input name="pk_nokm" placeholder="4"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>4h/50km(元)</label><input name="pk_v4" placeholder="500"></div>
         <div class="form-item"><label>8h/100km(元)</label><input name="pk_v8" placeholder="1000"></div>
         <div class="form-item"><label>超时(元/小时)</label><input name="pk_voh" placeholder="100"></div>
@@ -281,7 +282,7 @@ td{font-size:13px}
         <div class="form-item"><label>最低消费(元)</label><input name="pt_nmin" placeholder="100"></div>
       </div>
       <div class="col">
-        <h5>7座MPV</h5>
+        <h5>7座商务车</h5>
         <div class="form-item"><label>每公里(元)</label><input name="pt_vr" placeholder="6.5"></div>
         <div class="form-item"><label>最低消费(元)</label><input name="pt_vmin" placeholder="100"></div>
       </div>
@@ -330,18 +331,42 @@ td{font-size:13px}
       <button class="btn-gray" onclick="loadOrders()">刷新列表</button>
       <span style="font-size:12px;color:#6b7280;">导出内容 = 当前筛选结果，WPS / Excel 可直接打开</span>
     </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;background:#f8fafc;border:1px dashed #d1d5db;border-radius:8px;padding:10px;">
+      <strong style="font-size:13px;">批量复制：</strong>
+      <button class="btn-gray" onclick="setCheckAll(0)">全选未收钱</button>
+      <button class="btn-gray" onclick="setCheckAll(-1)">全选</button>
+      <button class="btn-gray" onclick="clearCheck()">取消全选</button>
+      <button class="btn-orange" onclick="copySelected()">📋 复制选中</button>
+      <span style="font-size:12px;color:#6b7280;" id="selInfo">已选 0 单</span>
+    </div>
+    <div class="f-item" style="margin-bottom:10px;"><label>手机端排序</label>
+      <select id="sortSelect" onchange="applySort()">
+        <option value="date_desc">按日期↓（新→旧）</option>
+        <option value="date_asc">按日期↑（旧→新）</option>
+        <option value="company_asc">按公司↑（A→Z）</option>
+        <option value="company_desc">按公司↓（Z→A）</option>
+        <option value="contact_asc">按对接人↑</option>
+        <option value="contact_desc">按对接人↓</option>
+        <option value="driver_asc">按执行司机↑</option>
+        <option value="driver_desc">按执行司机↓</option>
+        <option value="amount_desc">按本单小计↓（高→低）</option>
+        <option value="amount_asc">按本单小计↑（低→高）</option>
+      </select>
+    </div>
 
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th style="width:50px;">ID</th>
-          <th style="width:140px;">公司</th>
-          <th style="width:95px;">日期</th>
-          <th style="width:90px;">总金额(元)</th>
-          <th style="width:90px;">实收(元)</th>
-          <th style="width:95px;">对接人</th>
+          <th style="width:36px;"><input type="checkbox" id="ckAll" onclick="toggleAll(this)"></th>
+          <th style="width:60px;">ID</th>
+          <th class="sortable" data-key="company" style="width:130px;">公司 ⇅</th>
+          <th class="sortable" data-key="date" style="width:95px;">日期 ⇅</th>
+          <th class="sortable" data-key="amount" style="width:95px;">本单小计(元) ⇅</th>
+          <th style="width:85px;">实收(元)</th>
+          <th class="sortable" data-key="contact" style="width:90px;">对接人 ⇅</th>
+          <th class="sortable" data-key="driver" style="width:90px;">执行司机 ⇅</th>
           <th>账单内容</th>
-          <th style="width:110px;">是否已收钱</th>
+          <th style="width:105px;">已收钱</th>
           <th style="width:100px;">操作</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
@@ -458,6 +483,7 @@ async function loadOrders(){
     sel.innerHTML = '<option value="">全部公司</option>' + (data.companies||[]).map(c => '<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
     sel.value = cur;
     renderTable(); renderMobile();
+    updSelInfo();
   } catch(e){
     toast('连接后端失败，请确认已部署');
   }
@@ -466,15 +492,17 @@ function renderTable(){
   const tb = document.getElementById('tbody');
   if (!ORDERS.length){ tb.innerHTML=''; document.getElementById('emptyBox').style.display='block'; return; }
   document.getElementById('emptyBox').style.display='none';
-  tb.innerHTML = ORDERS.map(o => {
+  tb.innerHTML = sortOrders(ORDERS).map(o => {
     const paid = Number(o.paid) === 1;
     return `<tr>
+      <td><input type="checkbox" class="ck-row" value="${o.id}" onchange="updSelInfo()"></td>
       <td>${o.id}</td>
       <td><strong>${esc(o.company)}</strong></td>
       <td>${esc(o.date)}</td>
       <td><strong>${esc(o.amount || '')}</strong></td>
       <td><strong>${esc(o.received || '')}</strong></td>
       <td>@${esc(o.contact)}</td>
+      <td>${esc(o.driver || '—')}</td>
       <td>
         <pre class="bill-text ${paid?'paid-line':''}" id="bt_${o.id}">${esc(o.content)}</pre>
         <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
@@ -490,18 +518,19 @@ function renderTable(){
       <td><button class="btn-red" style="padding:4px 10px;font-size:12px;" onclick="deleteOrder(${o.id})">删除</button></td>
     </tr>`;
   }).join('');
+  document.getElementById('ckAll').checked = (document.querySelectorAll('.ck-row:checked').length === ORDERS.length) && ORDERS.length > 0;
 }
 function renderMobile(){
   const box = document.getElementById('mobileList');
   if (!ORDERS.length){ box.innerHTML=''; return; }
-  box.innerHTML = ORDERS.map(o => {
+  box.innerHTML = sortOrders(ORDERS).map(o => {
     const paid = Number(o.paid) === 1;
     return `<div class="m-card">
       <div class="m-head">
-        <span class="m-company">${esc(o.company)}</span>
+        <span style="display:flex;align-items:center;gap:6px;"><input type="checkbox" class="ck-row" value="${o.id}" onchange="updSelInfo()"> <span class="m-company">${esc(o.company)}</span></span>
         <span class="badge ${paid?'paid':'unpaid'}">${paid?'已收钱':'未收钱'}</span>
       </div>
-      <div class="m-meta">日期：${esc(o.date)} ｜ 总金额：<strong>${esc(o.amount || '-')}元</strong> ｜ 实收：<strong>${esc(o.received || '-')}元</strong> ｜ 对接人：@${esc(o.contact)} ｜ 单号：#${o.id}</div>
+      <div class="m-meta">日期：${esc(o.date)} ｜ 本单小计：<strong>${esc(o.amount || '-')}元</strong> ｜ 实收：<strong>${esc(o.received || '-')}元</strong> ｜ 对接人：@${esc(o.contact)} ｜ 司机：${esc(o.driver || '—')} ｜ 单号：#${o.id}</div>
       <pre class="bill-text ${paid?'paid-line':''}" id="mb_${o.id}">${esc(o.content)}</pre>
       <span class="expand-link" onclick="toggleExpand(${o.id}, this)">展开 / 收起</span>
       <div class="m-actions">
@@ -509,7 +538,7 @@ function renderMobile(){
         <label class="paid-switch">
           <input type="checkbox" ${paid?'checked':''} onchange="togglePaid(${o.id}, this.checked)">
           <span class="switch-track"></span>
-          <span class="paid-label">${paid?'已收':'未收'}</span>
+          <span class="paid-label">${paid?'已收钱':'未收钱'}</span>
         </label>
         <button class="btn-red" style="padding:6px 10px;font-size:12px;" onclick="deleteOrder(${o.id})">删除</button>
       </div>
@@ -582,7 +611,70 @@ async function restoreBackup(input){
   input.value = '';
 }
 loadMemosConfig();
+/* ===== v2.1.3 排序 / 多选复制 / 自动加载 ===== */
+let SORT_KEY = 'date', SORT_DIR = 'desc';  // 当前排序（仅影响查看与复制顺序，不改数据库）
+function sortOrders(list){
+  const arr = list.slice();
+  const key = SORT_KEY, dir = SORT_DIR === 'asc' ? 1 : -1;
+  const cmp = (a,b) => {
+    let x = a[key] || '', y = b[key] || '';
+    if (key === 'amount') return (parseFloat(x)||0) - (parseFloat(y)||0);
+    if (key === 'date') return x < y ? -1 : x > y ? 1 : 0;
+    return String(x).localeCompare(String(y), 'zh-Hans-CN');
+  };
+  arr.sort((a,b) => cmp(a,b) * dir);
+  return arr;
+}
+function applySort(){
+  const v = document.getElementById('sortSelect').value; // e.g. date_desc / company_asc
+  const [k, d] = v.split('_');
+  SORT_KEY = k; SORT_DIR = d;
+  renderTable(); renderMobile();
+}
+// 电脑端点表头排序
+document.addEventListener('click', function(e){
+  const th = e.target.closest('th.sortable');
+  if (!th) return;
+  const k = th.getAttribute('data-key');
+  if (SORT_KEY === k) SORT_DIR = SORT_DIR === 'asc' ? 'desc' : 'asc';
+  else { SORT_KEY = k; SORT_DIR = 'asc'; }
+  document.getElementById('sortSelect').value = SORT_KEY + '_' + SORT_DIR;
+  renderTable(); renderMobile();
+});
+/* 复选框批量 */
+function updSelInfo(){
+  const n = document.querySelectorAll('.ck-row:checked').length;
+  document.getElementById('selInfo').textContent = '已选 ' + n + ' 单';
+  const ckAll = document.getElementById('ckAll');
+  if (ckAll) ckAll.checked = (n === ORDERS.length) && ORDERS.length > 0;
+}
+function toggleAll(ck){ document.querySelectorAll('.ck-row').forEach(x => x.checked = ck.checked); updSelInfo(); }
+function setCheckAll(mode){ // -1 全选；0 全选未收钱
+  document.querySelectorAll('.ck-row').forEach(x => {
+    const o = ORDERS.find(y => Number(y.id) === Number(x.value));
+    x.checked = (mode === -1) ? true : (o && Number(o.paid) === 0);
+  });
+  updSelInfo();
+}
+function clearCheck(){ document.querySelectorAll('.ck-row').forEach(x => x.checked = false); updSelInfo(); }
+function copySelected(){
+  const sel = Array.from(document.querySelectorAll('.ck-row:checked')).map(x => Number(x.value));
+  if (!sel.length){ toast('请先勾选要复制的订单'); return; }
+  // 按当前排序后的列表顺序拼接
+  const ordered = sortOrders(ORDERS);
+  const picked = ordered.filter(o => sel.includes(Number(o.id)));
+  if (!picked.length){ toast('未找到选中的订单'); return; }
+  let total = 0;
+  picked.forEach(o => { total += parseFloat(o.amount) || 0; });
+  const sep = '——————————————';
+  const parts = picked.map(o => o.content.trim());
+  parts.push(sep + '\n一共 ' + picked.length + ' 单，总金额为 ' + (Math.round(total*100)/100) + ' 元');
+  if (copyText(parts.join('\n\n'))) toast('✅ 已复制 ' + picked.length + ' 单（共 ' + (Math.round(total*100)/100) + ' 元）');
+  else toast('复制失败，请长按文本手动复制');
+}
+/* 进入后台自动加载账单列表（不用再点查询） */
+(function(){ loadOrders(); })();
 </script>
-<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.0</div>
+<div style="text-align:center;color:#9ca3af;font-size:12px;padding:20px 0 10px;">用车账单系统 v2.1.3</div>
 </body>
 </html>

@@ -242,7 +242,8 @@ type Order struct {
 	Date      string `json:"date"`
 	Amount    string `json:"amount"`    // 总金额（优先从结果文本解析）
 	Received  string `json:"received"`  // 实收金额（实际收到的钱）
-	Contact   string `json:"contact"`
+	Contact   string `json:"contact"`   // 对接人（业务员）
+	Driver    string `json:"driver"`    // 执行司机（对账用）
 	Content   string `json:"content"`
 	Paid      int    `json:"paid"`
 	MemoID    string `json:"memo_id"` // 已推送到 Memos 的笔记标识（空=未推送）
@@ -314,6 +315,11 @@ func openOrdersDB(path string) (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+	// 执行司机（对账用）
+	if err := ensureColumn(db, "orders", "driver", "driver TEXT NOT NULL DEFAULT ''"); err != nil {
+		db.Close()
+		return nil, err
+	}
 	// 历史记录表（前台输入历史，存数据库而非浏览器 localStorage，换设备/清缓存不丢）
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS history (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -347,12 +353,15 @@ func openOrdersDB(path string) (*sql.DB, error) {
 // ---------- 前台历史记录（存 SQLite，每类最多 10 条） ----------
 
 // histKinds 历史记录分类（与 index.html 输入项一致）
-var histKinds = map[string]bool{"contact": true, "customer": true, "flight": true, "route": true, "extra_name": true}
+var histKinds = map[string]bool{"contact": true, "customer": true, "flight": true, "route": true, "extra_name": true, "driver": true}
 
-// histLimit 每类历史保留条数（其他费用明目只用 5 条，其余 10 条）
+// histLimit 每类历史保留条数（其他费用明目 5 条；执行司机 2 条；其余 10 条）
 func histLimit(kind string) int {
 	if kind == "extra_name" {
 		return 4 // 保留 4 条 + 新插入 1 条 = 5 条
+	}
+	if kind == "driver" {
+		return 1 // 保留 1 条 + 新插入 1 条 = 2 条
 	}
 	return 9 // 保留 9 条 + 新插入 1 条 = 10 条
 }
@@ -925,6 +934,7 @@ func (a *app) handleOrderSave(w http.ResponseWriter, r *http.Request) {
 		Amount   string `json:"amount"`
 		Received string `json:"received"`
 		Contact  string `json:"contact"`
+		Driver   string `json:"driver"`
 		Content  string `json:"content"`
 	}
 	if err := readJSON(r, &d); err != nil {
@@ -937,9 +947,9 @@ func (a *app) handleOrderSave(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"ok": false, "error": "账单内容不能为空"})
 		return
 	}
-	res, err := a.db.Exec(`INSERT INTO orders (company, date, amount, received, contact, content, paid, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, 0, ?)`,
-		d.Company, strings.TrimSpace(d.Date), strings.TrimSpace(d.Amount), strings.TrimSpace(d.Received), strings.TrimSpace(d.Contact), d.Content, time.Now().Format("2006-01-02 15:04:05"))
+	res, err := a.db.Exec(`INSERT INTO orders (company, date, amount, received, contact, driver, content, paid, created_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)`,
+		d.Company, strings.TrimSpace(d.Date), strings.TrimSpace(d.Amount), strings.TrimSpace(d.Received), strings.TrimSpace(d.Contact), strings.TrimSpace(d.Driver), d.Content, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": "保存失败: " + err.Error()})
 		return
@@ -983,7 +993,7 @@ func (a *app) handleOrderList(w http.ResponseWriter, r *http.Request) {
 		where = " WHERE " + strings.Join(conds, " AND ")
 	}
 
-	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, content, paid, memo_id, created_at FROM orders"+where+" ORDER BY id DESC", args...)
+	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, driver, content, paid, memo_id, created_at FROM orders"+where+" ORDER BY id DESC", args...)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
@@ -994,7 +1004,7 @@ func (a *app) handleOrderList(w http.ResponseWriter, r *http.Request) {
 	total, unpaid := 0, 0
 	for rows.Next() {
 		var o Order
-		if err := rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Content, &o.Paid, &o.MemoID, &o.CreatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Driver, &o.Content, &o.Paid, &o.MemoID, &o.CreatedAt); err != nil {
 			continue
 		}
 		orders = append(orders, o)
@@ -1121,20 +1131,20 @@ func xmlEscape(s string) string {
 
 // buildXlsx 生成标准 .xlsx（内联字符串 + 自动换行），与 WPS/Excel 兼容
 func buildXlsx(orders []Order) ([]byte, error) {
-	head := []string{"公司", "日期", "总金额(元)", "实收(元)", "对接人", "是否已收钱", "账单内容", "创建时间"}
+	head := []string{"公司", "日期", "本单小计(元)", "实收(元)", "对接人", "执行司机", "是否已收钱", "账单内容", "创建时间"}
 	allRows := [][]string{head}
 	for _, o := range orders {
 		paid := "未收钱"
 		if o.Paid == 1 {
 			paid = "已收钱"
 		}
-		allRows = append(allRows, []string{o.Company, o.Date, o.Amount, o.Received, o.Contact, paid, o.Content, o.CreatedAt})
+		allRows = append(allRows, []string{o.Company, o.Date, o.Amount, o.Received, o.Contact, o.Driver, paid, o.Content, o.CreatedAt})
 	}
 
 	var sheet strings.Builder
 	sheet.WriteString(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>`)
 	sheet.WriteString(`<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`)
-	sheet.WriteString(`<cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="14" customWidth="1"/><col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="12" customWidth="1"/><col min="5" max="5" width="14" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/><col min="7" max="7" width="70" customWidth="1"/><col min="8" max="8" width="20" customWidth="1"/></cols>`)
+	sheet.WriteString(`<cols><col min="1" max="1" width="24" customWidth="1"/><col min="2" max="2" width="14" customWidth="1"/><col min="3" max="3" width="12" customWidth="1"/><col min="4" max="4" width="12" customWidth="1"/><col min="5" max="5" width="14" customWidth="1"/><col min="6" max="6" width="12" customWidth="1"/><col min="7" max="7" width="12" customWidth="1"/><col min="8" max="8" width="70" customWidth="1"/><col min="9" max="9" width="20" customWidth="1"/></cols>`)
 	sheet.WriteString(`<sheetData>`)
 	for i, row := range allRows {
 		r := i + 1
@@ -1228,7 +1238,7 @@ func (a *app) handleOrderExport(w http.ResponseWriter, r *http.Request) {
 		where = " WHERE " + strings.Join(conds, " AND ")
 	}
 
-	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, content, paid, created_at FROM orders"+where+" ORDER BY id DESC", args...)
+	rows, err := a.db.Query("SELECT id, company, date, amount, received, contact, driver, content, paid, created_at FROM orders"+where+" ORDER BY id DESC", args...)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"ok": false, "error": err.Error()})
 		return
@@ -1237,7 +1247,7 @@ func (a *app) handleOrderExport(w http.ResponseWriter, r *http.Request) {
 	orders := []Order{}
 	for rows.Next() {
 		var o Order
-		if rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Content, &o.Paid, &o.CreatedAt) == nil {
+		if rows.Scan(&o.ID, &o.Company, &o.Date, &o.Amount, &o.Received, &o.Contact, &o.Driver, &o.Content, &o.Paid, &o.CreatedAt) == nil {
 			orders = append(orders, o)
 		}
 	}
@@ -1250,13 +1260,13 @@ func (a *app) handleOrderExport(w http.ResponseWriter, r *http.Request) {
 		// UTF-8 BOM，保证 WPS/Excel 中文不乱码
 		w.Write([]byte{0xEF, 0xBB, 0xBF})
 		cw := csv.NewWriter(w)
-		_ = cw.Write([]string{"公司", "日期", "总金额(元)", "实收(元)", "对接人", "是否已收钱", "账单内容", "创建时间"})
+		_ = cw.Write([]string{"公司", "日期", "本单小计(元)", "实收(元)", "对接人", "执行司机", "是否已收钱", "账单内容", "创建时间"})
 		for _, o := range orders {
 			paid := "未收钱"
 			if o.Paid == 1 {
 				paid = "已收钱"
 			}
-			_ = cw.Write([]string{o.Company, o.Date, o.Amount, o.Received, o.Contact, paid, o.Content, o.CreatedAt})
+			_ = cw.Write([]string{o.Company, o.Date, o.Amount, o.Received, o.Contact, o.Driver, paid, o.Content, o.CreatedAt})
 		}
 		cw.Flush()
 		return
