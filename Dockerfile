@@ -6,7 +6,6 @@ RUN apk add --no-cache ca-certificates tzdata \
 WORKDIR /app
 COPY car-billing-linux /app/car-billing
 COPY templates /app/templates
-COPY data /app/data
 RUN chmod +x /app/car-billing && chown -R app:app /app
 
 USER app
